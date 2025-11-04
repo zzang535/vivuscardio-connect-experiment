@@ -1,11 +1,13 @@
 import Image from "next/image";
 
-export default function TrainingHeader({
-  isResultPhase,
-  onPracticeStop,
-  onRestart,
-  onBackToIntro
-}) {
+interface TrainingHeaderProps {
+  isResultPhase: boolean;
+  onPracticeStop: () => void;
+  onRestart: () => void;
+  onBackToIntro: () => void;
+}
+
+export default function TrainingHeader({ isResultPhase, onPracticeStop, onRestart, onBackToIntro }: TrainingHeaderProps) {
   return (
     <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200">
       {/* Left: Logo */}

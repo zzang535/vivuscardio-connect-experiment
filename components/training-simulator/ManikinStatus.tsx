@@ -1,4 +1,11 @@
-export default function ManikinStatus({ isPressed, isVentilating, depth, ventilationVolume }) {
+interface ManikinStatusProps {
+  isPressed: boolean;
+  isVentilating: boolean;
+  depth: number;
+  ventilationVolume: number;
+}
+
+export default function ManikinStatus({ isPressed, isVentilating, depth, ventilationVolume }: ManikinStatusProps) {
   return (
     <div className="bg-white p-8 rounded-lg shadow-lg border border-gray-200 text-gray-800">
       <h3 className="text-xl font-bold text-gray-700 mb-6">Training Status</h3>

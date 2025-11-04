@@ -11,8 +11,51 @@ import ManikinGuide from "./ManikinGuide";
 import DebugModal from "./DebugModal";
 import { LAYOUT_SETTINGS } from "@/lib/training-simulator/constants";
 
+interface CompressionResult {
+  timestamp: number;
+  position: { x: number; y: number };
+  maxDepth: number;
+  rate: { interval: number; status?: string } | null;
+  duration: number;
+  positionCorrect: boolean;
+  depthCorrect: boolean;
+  rateCorrect: boolean;
+  success: boolean;
+}
+
+interface VentilationResult {
+  timestamp: number;
+  volume: number;
+  duration: number;
+  volumeCorrect: boolean;
+  success: boolean;
+}
+
+interface ScreenTrainingProps {
+  trainingPhase: 'active' | 'loading';
+  compressionResults: CompressionResult[];
+  ventilationResults: VentilationResult[];
+  clickPosition: { x: number; y: number };
+  isPressed: boolean;
+  depth: number;
+  rateData: { interval: number; status?: string } | null;
+  ventilationVolume: number;
+  isVentilating: boolean;
+  onPositionChange: (position: { x: number; y: number }) => void;
+  onPressStateChange: (isPressed: boolean) => void;
+  onDepthChange: (depth: number) => void;
+  onRateChange: (rateData: { interval: number; status?: string } | null) => void;
+  onCompressionComplete: (data: { position: { x: number; y: number }; maxDepth: number; rate: { interval: number; status?: string } | null; duration: number; timestamp: number }) => void;
+  onVentilationVolumeChange: (volume: number) => void;
+  onVentilationStateChange: (isVentilating: boolean) => void;
+  onVentilationComplete: (data: { volume: number; duration: number; timestamp: number }) => void;
+  onPracticeStop: () => void;
+  onLoadingComplete: () => void;
+  onBackToIntro: () => void;
+}
+
 export default function ScreenTraining({
-  trainingPhase, // 'active' or 'loading'
+  trainingPhase,
   compressionResults,
   ventilationResults,
   clickPosition,
@@ -32,16 +75,15 @@ export default function ScreenTraining({
   onPracticeStop,
   onLoadingComplete,
   onBackToIntro,
-}) {
+}: ScreenTrainingProps) {
   const [showDebugModal, setShowDebugModal] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
-  const [manikinSize, setManikinSize] = useState("medium");
+  const [manikinSize, setManikinSize] = useState<"large" | "medium">("medium");
 
   // 브라우저 width에 따라 마네킹 사이즈 결정
   useEffect(() => {
     const handleResize = () => {
-      const width = window.innerWidth;
-      setManikinSize(width <= LAYOUT_SETTINGS.MANIKIN_SIZE_BREAKPOINT ? "small" : "medium");
+      setManikinSize("medium");
     };
 
     // 초기 사이즈 설정

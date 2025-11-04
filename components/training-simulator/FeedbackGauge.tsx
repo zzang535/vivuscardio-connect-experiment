@@ -1,6 +1,17 @@
 import { DEPTH_SETTINGS, VENTILATION_SETTINGS, ANIMATION_SETTINGS, RATE_SETTINGS } from "@/lib/training-simulator/constants";
 
-export default function FeedbackGauge({ type, title, clickPosition, isPressed, depth, rateData, ventilationVolume, isVentilating }) {
+interface FeedbackGaugeProps {
+  type: string;
+  title: string;
+  clickPosition?: { x: number; y: number } | null;
+  isPressed: boolean;
+  depth: number;
+  rateData?: { interval: number; status?: string } | null;
+  ventilationVolume: number;
+  isVentilating: boolean;
+}
+
+export default function FeedbackGauge({ type, title, clickPosition, isPressed, depth, rateData, ventilationVolume, isVentilating }: FeedbackGaugeProps) {
   const renderPositionGauge = () => {
     // 마네킹의 클릭 위치를 게이지 좌표로 변환
     // clickPosition.y는 bodyRef(80x80px 영역) 내에서의 상대적 위치

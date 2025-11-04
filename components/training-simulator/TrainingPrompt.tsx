@@ -6,25 +6,58 @@ import { motion, AnimatePresence } from "framer-motion";
 // 카운트다운 배열 (3, 2, 1만 표시) - 컴포넌트 외부에 선언
 const COUNTDOWN_SEQUENCE = [4, 3, 2, 1];
 
+interface CompressionResult {
+  timestamp: number;
+  position: { x: number; y: number };
+  maxDepth: number;
+  rate: { interval: number; status?: string } | null;
+  duration: number;
+  positionCorrect: boolean;
+  depthCorrect: boolean;
+  rateCorrect: boolean;
+  success: boolean;
+}
+
+interface VentilationResult {
+  timestamp: number;
+  volume: number;
+  duration: number;
+  volumeCorrect: boolean;
+  success: boolean;
+}
+
+interface TrainingPromptProps {
+  lastCompressionResult: CompressionResult | undefined;
+  lastVentilationResult: VentilationResult | undefined;
+  isPressed: boolean;
+  isVentilating: boolean;
+  trainingStarted: boolean;
+}
+
+interface Message {
+  title: string;
+  color: string;
+}
+
 export default function TrainingPrompt({
   lastCompressionResult,
   lastVentilationResult,
   isPressed,
   isVentilating,
   trainingStarted
-}) {
+}: TrainingPromptProps) {
   // 카운트다운 상태
   const [countdownIndex, setCountdownIndex] = useState(0);
   const [showCountdown, setShowCountdown] = useState(true);
 
   // 메시지 상태
-  const [currentMessage, setCurrentMessage] = useState(null);
+  const [currentMessage, setCurrentMessage] = useState<Message | null>(null);
   const [messageKey, setMessageKey] = useState(0);
 
   // Hands Off Time 상태
   const [handsOffTime, setHandsOffTime] = useState(0);
   const [showHandsOff, setShowHandsOff] = useState(false);
-  const handsOffTimerRef = useRef(null);
+  const handsOffTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastActionTimeRef = useRef(Date.now());
 
   // 카운트다운 로직 (3, 2, 1, Start)

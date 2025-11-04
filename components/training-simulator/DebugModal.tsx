@@ -2,19 +2,54 @@
 
 import { useState, useRef, useEffect } from "react";
 
+interface CompressionResult {
+  timestamp: number;
+  position: { x: number; y: number };
+  maxDepth: number;
+  rate: { interval: number; status?: string } | null;
+  duration: number;
+  positionCorrect: boolean;
+  depthCorrect: boolean;
+  rateCorrect: boolean;
+  success: boolean;
+}
+
+interface VentilationResult {
+  timestamp: number;
+  volume: number;
+  duration: number;
+  volumeCorrect: boolean;
+  success: boolean;
+}
+
+interface DebugModalProps {
+  showModal?: boolean;
+  onClose: () => void;
+  compressionResults?: CompressionResult[];
+  ventilationResults?: VentilationResult[];
+}
+
+type Action = {
+  type: string;
+  data: CompressionResult | VentilationResult;
+  id: string;
+  timestamp: number;
+  index: number;
+};
+
 export default function DebugModal({
   showModal = false,
   onClose,
   compressionResults = [],
   ventilationResults = []
-}) {
+}: DebugModalProps) {
   const [position, setPosition] = useState({ x: 20, y: 20 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [selectedAction, setSelectedAction] = useState(null);
+  const [selectedAction, setSelectedAction] = useState<Action | null>(null);
 
-  const modalRef = useRef(null);
-  const headerRef = useRef(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
 
   // 압박과 환기를 시간순으로 합친 액션 리스트 생성
   const actions = [
@@ -35,10 +70,12 @@ export default function DebugModal({
   ].sort((a, b) => a.timestamp - b.timestamp);
 
   // 드래그 시작
-  const handleMouseDown = (event) => {
-    if (event.target.closest('button, input, textarea, select, a')) {
+  const handleMouseDown = (event: React.MouseEvent) => {
+    if ((event.target as HTMLElement).closest('button, input, textarea, select, a')) {
       return;
     }
+
+    if (!headerRef.current) return;
 
     setIsDragging(true);
     const rect = headerRef.current.getBoundingClientRect();
@@ -51,7 +88,7 @@ export default function DebugModal({
   };
 
   // 드래그 중
-  const handleMouseMove = (event) => {
+  const handleMouseMove = (event: MouseEvent) => {
     if (!isDragging || !modalRef.current) return;
 
     const modalRect = modalRef.current.getBoundingClientRect();
@@ -95,12 +132,12 @@ export default function DebugModal({
   }, [showModal]);
 
   // 액션 클릭 핸들러
-  const handleActionClick = (action) => {
+  const handleActionClick = (action: Action) => {
     setSelectedAction(action);
   };
 
   // 압박 상세 정보 렌더링
-  const renderCompressionDetail = (data) => {
+  const renderCompressionDetail = (data: CompressionResult) => {
     const failures = [];
     if (!data.positionCorrect) failures.push('위치');
     if (!data.depthCorrect) failures.push('깊이');
@@ -208,7 +245,7 @@ export default function DebugModal({
   };
 
   // 환기 상세 정보 렌더링
-  const renderVentilationDetail = (data) => {
+  const renderVentilationDetail = (data: VentilationResult) => {
     return (
       <div className="space-y-4">
         {/* 판정 결과 */}
@@ -377,8 +414,8 @@ export default function DebugModal({
                   </div>
                 </div>
                 {selectedAction.type === 'compression'
-                  ? renderCompressionDetail(selectedAction.data)
-                  : renderVentilationDetail(selectedAction.data)
+                  ? renderCompressionDetail(selectedAction.data as CompressionResult)
+                  : renderVentilationDetail(selectedAction.data as VentilationResult)
                 }
               </div>
             )}

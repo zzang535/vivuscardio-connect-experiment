@@ -6,8 +6,8 @@ interface CompressionResult {
   timestamp: number;
   position: { x: number; y: number };
   maxDepth: number;
-  rate?: { interval: number; status?: string };
-  duration?: number;
+  rate: { interval: number; status?: string } | null;
+  duration: number;
   positionCorrect: boolean;
   depthCorrect: boolean;
   rateCorrect: boolean;

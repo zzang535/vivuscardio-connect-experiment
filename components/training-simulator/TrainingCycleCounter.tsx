@@ -3,7 +3,32 @@ import IconVentilation from './IconVentilation';
 import IconCheckCircle from './IconCheckCircle';
 import IconXCircle from './IconXCircle';
 
-export default function TrainingCycleCounter({ compressionResults = [], ventilationResults = [] }) {
+interface CompressionResult {
+  timestamp: number;
+  position: { x: number; y: number };
+  maxDepth: number;
+  rate: { interval: number; status?: string } | null;
+  duration: number;
+  positionCorrect: boolean;
+  depthCorrect: boolean;
+  rateCorrect: boolean;
+  success: boolean;
+}
+
+interface VentilationResult {
+  timestamp: number;
+  volume: number;
+  duration: number;
+  volumeCorrect: boolean;
+  success: boolean;
+}
+
+interface TrainingCycleCounterProps {
+  compressionResults?: CompressionResult[];
+  ventilationResults?: VentilationResult[];
+}
+
+export default function TrainingCycleCounter({ compressionResults = [], ventilationResults = [] }: TrainingCycleCounterProps) {
   const compressionCycles = Array.from({ length: 30 }, (_, i) => i + 1);
   const ventilationCycles = [1, 2];
 
@@ -39,7 +64,7 @@ export default function TrainingCycleCounter({ compressionResults = [], ventilat
 
   const ventilationStates = getVentilationStates();
 
-  const getCompressionStateClass = (state) => {
+  const getCompressionStateClass = (state: string) => {
     switch (state) {
       case "success": return "";
       case "error": return "";
@@ -47,7 +72,7 @@ export default function TrainingCycleCounter({ compressionResults = [], ventilat
     }
   };
 
-  const getVentilationStateClass = (state) => {
+  const getVentilationStateClass = (state: string) => {
     switch (state) {
       case "success": return "";
       case "error": return "";
@@ -55,7 +80,7 @@ export default function TrainingCycleCounter({ compressionResults = [], ventilat
     }
   };
 
-  const renderCompressionContent = (cycle, state) => {
+  const renderCompressionContent = (cycle: number, state: string) => {
     if (state === "success") {
       return (
         <div className="animate-[pop_0.3s_ease-out]">
@@ -73,7 +98,7 @@ export default function TrainingCycleCounter({ compressionResults = [], ventilat
     return cycle;
   };
 
-  const renderVentilationContent = (cycle, state) => {
+  const renderVentilationContent = (cycle: number, state: string) => {
     if (state === "success") {
       return (
         <div className="animate-[pop_0.3s_ease-out]">

@@ -8,7 +8,21 @@
  * @param {Array} criteria - 평가 기준 배열 [{label, value, color}]
  * @param {string} specialLabel - 특수 라벨 (Compression Fraction 전용)
  */
-export default function MetricCard({ title, score, criteria, specialLabel }) {
+
+interface CriteriaItem {
+  label: string;
+  value: number | string;
+  color: string;
+}
+
+interface MetricCardProps {
+  title: string;
+  score?: number;
+  criteria?: CriteriaItem[];
+  specialLabel?: string;
+}
+
+export default function MetricCard({ title, score, criteria = [], specialLabel }: MetricCardProps) {
   if (specialLabel) {
     // Compression Fraction은 특수 케이스
     return (
@@ -35,7 +49,7 @@ export default function MetricCard({ title, score, criteria, specialLabel }) {
     const gapSize = 4; // 항목 간 간격 (px)
     
     // value가 0이 아닌 항목만 필터링
-    const nonZeroItems = criteria.filter(c => c.value > 0);
+    const nonZeroItems = criteria.filter(c => typeof c.value === 'number' && c.value > 0);
     
     // 총 간격 계산 (항목 수 - 1)
     const totalGaps = (nonZeroItems.length - 1) * gapSize;
@@ -45,7 +59,7 @@ export default function MetricCard({ title, score, criteria, specialLabel }) {
     
     // 각 항목의 실제 높이 계산
     return criteria.map(item => {
-      if (item.value === 0) return 0;
+      if (typeof item.value !== 'number' || item.value === 0) return 0;
       return (availableHeight * item.value) / 100;
     });
   };
@@ -67,7 +81,7 @@ export default function MetricCard({ title, score, criteria, specialLabel }) {
         {/* Vertical Bar */}
         <div className="w-[40px] h-[100px] flex flex-col justify-end gap-[4px]">
           {criteria.map((item, index) => {
-            if (item.value === 0) return null;
+            if (typeof item.value !== 'number' || item.value === 0) return null;
             return (
               <div
                 key={index}

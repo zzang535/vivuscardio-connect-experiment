@@ -7,19 +7,25 @@ import Manikin from "./Manikin";
 import ManikinGuide from "./ManikinGuide";
 import MetricCard from "./MetricCard";
 import { LAYOUT_SETTINGS } from "@/lib/training-simulator/constants";
+import { TrainingMetrics } from "@/lib/training-simulator/calculateMetrics";
+
+interface ScreenResultProps {
+  metrics: TrainingMetrics;
+  onRestart: () => void;
+  onBackToIntro: () => void;
+}
 
 export default function ScreenResult({
   metrics,
   onRestart,
   onBackToIntro,
-}) {
-  const [manikinSize, setManikinSize] = useState("medium");
+}: ScreenResultProps) {
+  const [manikinSize, setManikinSize] = useState<"large" | "medium">("medium");
 
   // 브라우저 width에 따라 마네킹 사이즈 결정
   useEffect(() => {
     const handleResize = () => {
-      const width = window.innerWidth;
-      setManikinSize(width <= LAYOUT_SETTINGS.MANIKIN_SIZE_BREAKPOINT ? "small" : "medium");
+      setManikinSize("medium");
     };
 
     // 초기 사이즈 설정

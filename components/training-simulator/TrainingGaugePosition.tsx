@@ -1,7 +1,12 @@
 import { ANIMATION_SETTINGS, POSITION_SETTINGS } from "@/lib/training-simulator/constants";
 import IconTarget from "./IconTarget";
 
-export default function TrainingGaugePosition({ clickPosition, isPressed }) {
+interface TrainingGaugePositionProps {
+  clickPosition: { x: number; y: number } | null;
+  isPressed: boolean;
+}
+
+export default function TrainingGaugePosition({ clickPosition, isPressed }: TrainingGaugePositionProps) {
   // 마네킹의 클릭 위치를 게이지 좌표로 변환
   const gaugeX = clickPosition ? clickPosition.x : 50;
   const gaugeY = clickPosition ? clickPosition.y : 50;

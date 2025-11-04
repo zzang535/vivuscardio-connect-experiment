@@ -1,7 +1,13 @@
 import IconCompression from './IconCompression';
 import { DEPTH_SETTINGS } from '@/lib/training-simulator/constants';
 
-export default function TrainingGaugeDepth({ depth, isPressed, lastMaxDepth }) {
+interface TrainingGaugeDepthProps {
+  depth: number;
+  isPressed: boolean;
+  lastMaxDepth: number | null;
+}
+
+export default function TrainingGaugeDepth({ depth, isPressed, lastMaxDepth }: TrainingGaugeDepthProps) {
   // 현재 depth 값 (0-100%)을 게이지 높이로 변환 (실시간 fill용)
   const depthHeight = depth
     ? Math.min(depth * DEPTH_SETTINGS.GAUGE_HEIGHT_MULTIPLIER, DEPTH_SETTINGS.MAX_GAUGE_HEIGHT)

@@ -4,7 +4,18 @@ import TrainingGaugeRate from "./TrainingGaugeRate";
 import TrainingGaugeVolume from "./TrainingGaugeVolume";
 import PageControl from "./PageControl";
 
-export default function TrainingGauges({ clickPosition, isPressed, depth, rateData, ventilationVolume, isVentilating, lastMaxDepth, lastMaxVolume }) {
+interface TrainingGaugesProps {
+  clickPosition: { x: number; y: number };
+  isPressed: boolean;
+  depth: number;
+  rateData: { interval: number; status?: string } | null;
+  ventilationVolume: number;
+  isVentilating: boolean;
+  lastMaxDepth: number | null;
+  lastMaxVolume: number | null;
+}
+
+export default function TrainingGauges({ clickPosition, isPressed, depth, rateData, ventilationVolume, isVentilating, lastMaxDepth, lastMaxVolume }: TrainingGaugesProps) {
   return (
     <div className="flex flex-col items-center gap-[10px] w-full max-w-[1286px]">
       <div className="flex items-center justify-between w-full bg-white rounded-[20px] p-0">

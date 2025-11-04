@@ -21,6 +21,19 @@ const pulseAnimation = `
   }
 `;
 
+interface ManikinProps {
+  onPositionChange: (position: { x: number; y: number }) => void;
+  onPressStateChange: (isPressed: boolean) => void;
+  onDepthChange: (depth: number) => void;
+  onRateChange: (rateData: { interval: number; status?: string } | null) => void;
+  onCompressionComplete: (data: { position: { x: number; y: number }; maxDepth: number; rate: { interval: number; status?: string } | null; duration: number; timestamp: number }) => void;
+  onVentilationVolumeChange: (volume: number) => void;
+  onVentilationStateChange: (isVentilating: boolean) => void;
+  onVentilationComplete: (data: { volume: number; duration: number; timestamp: number }) => void;
+  size?: "large" | "medium";
+  disabled?: boolean;
+}
+
 export default function Manikin({
   onPositionChange,
   onPressStateChange,
@@ -30,29 +43,29 @@ export default function Manikin({
   onVentilationVolumeChange,
   onVentilationStateChange,
   onVentilationComplete,
-  size = "medium", // "large" for preview, "medium" for training
-  disabled = false // 로딩 중에는 클릭 비활성화
-}) {
+  size = "medium",
+  disabled = false
+}: ManikinProps) {
   const [isPressed, setIsPressed] = useState(false);
   const [depth, setDepth] = useState(0);
-  const [pressStartTime, setPressStartTime] = useState(null);
+  const [pressStartTime, setPressStartTime] = useState<number | null>(null);
   const [currentTime, setCurrentTime] = useState(Date.now());
-  const [compressionHistory, setCompressionHistory] = useState([]);
+  const [compressionHistory, setCompressionHistory] = useState<number[]>([]);
   const [currentPosition, setCurrentPosition] = useState({ x: 50, y: 40 });
   const [maxDepthReached, setMaxDepthReached] = useState(0);
-  const [currentRateData, setCurrentRateData] = useState(null);
+  const [currentRateData, setCurrentRateData] = useState<{ interval: number; status?: string } | null>(null);
 
   // Ventilation 관련 상태
   const [isVentilating, setIsVentilating] = useState(false);
   const [ventilationVolume, setVentilationVolume] = useState(0);
-  const [ventilationStartTime, setVentilationStartTime] = useState(null);
+  const [ventilationStartTime, setVentilationStartTime] = useState<number | null>(null);
   const [maxVolumeReached, setMaxVolumeReached] = useState(0);
 
-  const bodyRef = useRef(null);
-  const headRef = useRef(null);
-  const depthIntervalRef = useRef(null);
-  const timeUpdateRef = useRef(null);
-  const ventilationIntervalRef = useRef(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const headRef = useRef<HTMLDivElement>(null);
+  const depthIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timeUpdateRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const ventilationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const heartPosition = POSITION_SETTINGS.HEART_POSITION;
 
@@ -63,10 +76,10 @@ export default function Manikin({
     small: { width: 280, height: 420 },
   };
 
-  const { width, height } = SIZE_CONFIG[size];
+  const { width, height } = SIZE_CONFIG[size as keyof typeof SIZE_CONFIG];
 
   // Rate 계산 함수
-  const calculateRate = (newCompressionTime) => {
+  const calculateRate = (newCompressionTime: number) => {
     const updatedHistory = [...compressionHistory, newCompressionTime];
 
     if (updatedHistory.length > RATE_SETTINGS.MAX_COMPRESSION_HISTORY) {
@@ -90,21 +103,20 @@ export default function Manikin({
 
       newRateData = {
         interval: interval,
-        status: rateStatus,
-        compressionCount: updatedHistory.length
+        status: rateStatus
       };
 
       onRateChange && onRateChange(newRateData);
+    } else {
+      onRateChange && onRateChange(null);
     }
 
     setCompressionHistory(updatedHistory);
-    setCurrentRateData(newRateData);
-
     return newRateData;
   };
 
   // Ventilation 처리
-  const handleVentilationMouseDown = (e) => {
+  const handleVentilationMouseDown = (e: React.MouseEvent) => {
     if (disabled) return; // 비활성화 상태에서는 클릭 무시
     if (!headRef.current) return;
 
@@ -125,7 +137,7 @@ export default function Manikin({
   };
 
   const handleVentilationMouseUp = () => {
-    if (!isVentilating) return;
+    if (!isVentilating || !ventilationStartTime) return;
 
     const ventilationTime = Date.now() - ventilationStartTime;
     const finalVolume = ventilationVolume;
@@ -153,7 +165,7 @@ export default function Manikin({
     }
   };
 
-  const handleMouseDown = (e) => {
+  const handleMouseDown = (e: React.MouseEvent) => {
     if (disabled) return; // 비활성화 상태에서는 클릭 무시
     if (!bodyRef.current) return;
 
@@ -189,7 +201,7 @@ export default function Manikin({
   };
 
   const handleMouseUp = () => {
-    if (!isPressed) return;
+    if (!isPressed || !pressStartTime) return;
 
     const pressTime = Date.now() - pressStartTime;
     const finalDepth = depth;

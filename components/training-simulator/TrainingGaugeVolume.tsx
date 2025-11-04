@@ -2,7 +2,13 @@ import { VENTILATION_SETTINGS } from "@/lib/training-simulator/constants";
 import IconVentilation from './IconVentilation';
 import IconInfantWarning from './IconInfantWarning';
 
-export default function TrainingGaugeVolume({ ventilationVolume, isVentilating, lastMaxVolume }) {
+interface TrainingGaugeVolumeProps {
+  ventilationVolume: number;
+  isVentilating: boolean;
+  lastMaxVolume: number | null;
+}
+
+export default function TrainingGaugeVolume({ ventilationVolume, isVentilating, lastMaxVolume }: TrainingGaugeVolumeProps) {
   // 현재 ventilationVolume 값 (0-100%)을 게이지 높이로 변환 (실시간 fill용, 아래에서 위로)
   const volumeHeight = ventilationVolume 
     ? Math.min(ventilationVolume * VENTILATION_SETTINGS.GAUGE_HEIGHT_MULTIPLIER, VENTILATION_SETTINGS.MAX_GAUGE_HEIGHT) 

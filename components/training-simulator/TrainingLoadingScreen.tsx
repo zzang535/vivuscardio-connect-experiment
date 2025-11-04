@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 
-export default function TrainingLoadingScreen({ onLoadingComplete }) {
+interface TrainingLoadingScreenProps {
+  onLoadingComplete: () => void;
+}
+
+export default function TrainingLoadingScreen({ onLoadingComplete }: TrainingLoadingScreenProps) {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {

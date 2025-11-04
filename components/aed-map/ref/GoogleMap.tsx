@@ -7,9 +7,9 @@ import React, {
     useImperativeHandle,
     forwardRef,
 } from 'react';
-import { createCurrentLocationDiv, calculateDistance } from '@/lib/methods';
-import { darkenColor } from '@/lib/tinycolor';
-import { Playspot, Spot, Position } from '@/lib/types';
+import { createCurrentLocationDiv, calculateDistance } from '@/lib/aed-map/methods';
+import { darkenColor } from '@/lib/aed-map/tinycolor';
+import { Playspot, Spot, Position } from '@/lib/aed-map/types';
 
 const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAP_API_KEY || '';
 
@@ -117,7 +117,7 @@ const GoogleMap = forwardRef(
 
                 let distances: number[] = [];
 
-                spot.playspots.map((playspot) => {
+                spot.playspots.forEach((playspot: Playspot) => {
                     const distance = calculateDistance(
                         currentPosition.lat,
                         currentPosition.lng,
@@ -177,7 +177,7 @@ const GoogleMap = forwardRef(
                     });
                 }
 
-                spot.playspots.map((playspot) => {
+                spot.playspots.forEach((playspot: Playspot) => {
                     // 마커 생성
                     const pinBackground = new google.maps.marker.PinElement({
                         borderColor: darkenColor({

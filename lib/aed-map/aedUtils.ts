@@ -1,4 +1,4 @@
-import { Position } from "@/lib/types";
+import { Position } from "@/lib/aed-map/types";
 
 export interface AED {
   mfg: string;

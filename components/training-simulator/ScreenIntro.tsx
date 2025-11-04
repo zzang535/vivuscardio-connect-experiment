@@ -2,7 +2,11 @@
 
 import { motion } from "framer-motion";
 
-export default function ScreenIntro({ onStart }) {
+interface ScreenIntroProps {
+  onStart: () => void;
+}
+
+export default function ScreenIntro({ onStart }: ScreenIntroProps) {
   return (
     <div className="min-h-screen bg-[#1F2937] flex flex-col items-center justify-center">
       <div className="text-center">

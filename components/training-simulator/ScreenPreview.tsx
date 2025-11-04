@@ -6,6 +6,20 @@ import Manikin from "./Manikin";
 import ManikinStatus from "./ManikinStatus";
 import ManikinGuide from "./ManikinGuide";
 
+interface ScreenPreviewProps {
+  isPressed: boolean;
+  isVentilating: boolean;
+  depth: number;
+  ventilationVolume: number;
+  onPositionChange: (position: { x: number; y: number }) => void;
+  onPressStateChange: (isPressed: boolean) => void;
+  onDepthChange: (depth: number) => void;
+  onVentilationVolumeChange: (volume: number) => void;
+  onVentilationStateChange: (isVentilating: boolean) => void;
+  onStartTraining: () => void;
+  onBackToIntro: () => void;
+}
+
 export default function ScreenPreview({
   isPressed,
   isVentilating,
@@ -18,7 +32,7 @@ export default function ScreenPreview({
   onVentilationStateChange,
   onStartTraining,
   onBackToIntro
-}) {
+}: ScreenPreviewProps) {
   return (
     <div className="w-full h-full bg-[#F5F5F5]">
       <div style={{ height: '60px' }}>

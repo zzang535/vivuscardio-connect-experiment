@@ -3,7 +3,11 @@ import IconRate from "./IconRate";
 import IconSpeedSlow from "./IconSpeedSlow";
 import IconSpeed from "./IconSpeed";
 
-export default function TrainingGaugeRate({ rateData }) {
+interface TrainingGaugeRateProps {
+  rateData: { interval: number; status?: string } | null;
+}
+
+export default function TrainingGaugeRate({ rateData }: TrainingGaugeRateProps) {
   // Rate 데이터를 게이지 X좌표로 변환
   // 3등분 구조: 0% (너무 느림) | 33.33% (0.8s) | 66.67% (0.4s) | 100% (너무 빠름)
   // 왼쪽 = slow (긴 간격), 오른쪽 = fast (짧은 간격)

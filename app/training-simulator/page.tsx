@@ -47,7 +47,7 @@ export default function TrainingPage() {
   const [screenState, setScreenState] = useState('intro');
 
   // 훈련 단계: 'active' -> 'loading'
-  const [trainingPhase, setTrainingPhase] = useState('active');
+  const [trainingPhase, setTrainingPhase] = useState<'active' | 'loading'>('active');
 
   // 결과 데이터
   const [trainingMetrics, setTrainingMetrics] = useState<TrainingMetrics | null>(null);
@@ -294,6 +294,9 @@ export default function TrainingPage() {
 
   // 4. 결과 화면 렌더링
   if (screenState === 'result') {
+    if (!trainingMetrics) {
+      return null;
+    }
     return (
       <ScreenResult
         metrics={trainingMetrics}
