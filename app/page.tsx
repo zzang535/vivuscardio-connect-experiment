@@ -1,65 +1,127 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
 
 export default function Home() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+  const [activeSection, setActiveSection] = useState("section1");
+
+  const sections = [
+    { id: "section1", name: "AED Map" },
+    { id: "section2", name: "Section 2" },
+  ];
+
+  const handleSectionClick = (sectionId: string) => {
+    setActiveSection(sectionId);
+  };
+
+  const handleOpenAEDMap = () => {
+    window.open("/aed-map", "_blank");
+  };
+
+  const renderActiveContent = () => {
+    if (activeSection === "section1") {
+      return (
+        <div className="p-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            AED Map
+          </h2>
+          <p className="text-gray-600 mb-8">
+            내 주변 가장 가까운 AED를 찾아보세요.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            onClick={handleOpenAEDMap}
+            className="
+              px-6 py-3
+              bg-[#FF5252]
+              text-white
+              font-semibold
+              rounded-lg
+              shadow-lg
+              hover:bg-[#FF3838]
+              transition-all
+              duration-300
+              hover:shadow-xl
+              hover:scale-105
+            "
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            AED Map 열기
+          </button>
         </div>
-      </main>
+      );
+    }
+
+    return (
+      <div className="p-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          {sections.find((s) => s.id === activeSection)?.name}
+        </h2>
+        <p className="text-gray-600">
+          This is the content for {sections.find((s) => s.id === activeSection)?.name}
+        </p>
+      </div>
+    );
+  };
+
+  return (
+    <div className="h-screen flex w-full">
+      {/* Left Navigation */}
+      <div
+        className="
+          h-screen
+          w-64
+          bg-gradient-to-b from-gray-50 to-white
+          border-r
+          border-gray-100
+          overflow-y-auto
+          shadow-sm
+        "
+      >
+        <div className="p-6 border-b border-gray-100">
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+            Menu
+            <div className="w-8 h-0.5 bg-[#0061F2] mt-2 rounded-full"></div>
+          </h1>
+        </div>
+        <nav className="p-4">
+          <ul className="space-y-2">
+            {sections.map((section) => (
+              <li key={section.id}>
+                <button
+                  onClick={() => handleSectionClick(section.id)}
+                  className={`
+                    w-full text-left px-4 py-2 rounded-lg font-medium text-[14px]
+                    transition-all duration-300 ease-out
+                    group relative overflow-hidden
+                    ${
+                      activeSection === section.id
+                        ? "bg-[#0061F2] text-white scale-105"
+                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-50 hover:scale-102"
+                    }
+                  `}
+                >
+                  <span className="relative z-10">{section.name}</span>
+                  {activeSection === section.id && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#0061F2] to-[#0061F2] opacity-100"></div>
+                  )}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </div>
+
+      {/* Main Content */}
+      <div
+        className="
+          h-screen
+          bg-gray-50
+          overflow-y-auto
+          box-border
+        "
+        style={{ width: "calc(100% - 256px)" }}
+      >
+        <div>{renderActiveContent()}</div>
+      </div>
     </div>
   );
 }
