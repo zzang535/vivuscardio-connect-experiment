@@ -45,7 +45,7 @@ export default function Header({
           </button>
         </div>
       )}
-      {mode === 'result' && (
+      {/* {mode === 'result' && (
         <div className="flex gap-3">
           {onRestart && (
             <button
@@ -72,7 +72,7 @@ export default function Header({
             </button>
           )}
         </div>
-      )}
+      )} */}
     </div>
   );
 }
