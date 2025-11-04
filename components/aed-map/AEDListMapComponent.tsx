@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react";
-import { Position } from "../lib/types";
-import { initializeMarkerStyles, createCurrentLocationMarker } from "../lib/currentLocationMarker";
+import { Position } from "@/lib/aed-map/types";
+import { initializeMarkerStyles, createCurrentLocationMarker } from "@/lib/aed-map/currentLocationMarker";
 
 interface AEDData {
   id: string;

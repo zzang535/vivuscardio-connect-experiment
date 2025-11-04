@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Position } from "../lib/types";
+import { Position } from "@/lib/aed-map/types";
 
 interface AddressSearchProps {
   onSearchComplete: (position: Position) => void;

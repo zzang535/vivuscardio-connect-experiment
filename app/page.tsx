@@ -7,7 +7,7 @@ export default function Home() {
 
   const sections = [
     { id: "section1", name: "AED Map" },
-    { id: "section2", name: "Section 2" },
+    { id: "section2", name: "Training Simulator" },
   ];
 
   const handleSectionClick = (sectionId: string) => {
@@ -16,6 +16,10 @@ export default function Home() {
 
   const handleOpenAEDMap = () => {
     window.open("/aed-map", "_blank");
+  };
+
+  const handleOpenTrainingSimulator = () => {
+    window.open("/training-simulator", "_blank");
   };
 
   const renderActiveContent = () => {
@@ -50,6 +54,37 @@ export default function Home() {
       );
     }
 
+    if (activeSection === "section2") {
+      return (
+        <div className="p-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            Training Simulator
+          </h2>
+          <p className="text-gray-600 mb-8">
+            심폐소생술 훈련 시뮬레이터를 시작하세요.
+          </p>
+          <button
+            onClick={handleOpenTrainingSimulator}
+            className="
+              px-6 py-3
+              bg-[#FF5252]
+              text-white
+              font-semibold
+              rounded-lg
+              shadow-lg
+              hover:bg-[#FF3838]
+              transition-all
+              duration-300
+              hover:shadow-xl
+              hover:scale-105
+            "
+          >
+            Training Simulator 열기
+          </button>
+        </div>
+      );
+    }
+
     return (
       <div className="p-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-4">
@@ -78,7 +113,7 @@ export default function Home() {
       >
         <div className="p-6 border-b border-gray-100">
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-            Menu
+            Experiment
             <div className="w-8 h-0.5 bg-[#0061F2] mt-2 rounded-full"></div>
           </h1>
         </div>

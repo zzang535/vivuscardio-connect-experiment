@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Position } from "../lib/types";
+import { Position } from "@/lib/aed-map/types";
 
 interface AEDData {
   id: string;

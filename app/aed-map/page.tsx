@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Position } from "@/aed-map-resources/lib/types";
-import ResultScreen from "@/aed-map-resources/components/ResultScreen";
-import AddressSearch from "@/aed-map-resources/components/AddressSearch";
-import AEDMapScreen from "@/aed-map-resources/components/AEDMapScreen";
+import { Position } from "@/lib/aed-map/types";
+import ResultScreen from "@/components/aed-map/ResultScreen";
+import AddressSearch from "@/components/aed-map/AddressSearch";
+import AEDMapScreen from "@/components/aed-map/AEDMapScreen";
 
 interface AEDData {
   id: string;

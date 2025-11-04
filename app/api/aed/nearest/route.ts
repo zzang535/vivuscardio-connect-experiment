@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
     }
 
     // AED 데이터 동적 로드
-    const aedDataFile: AEDDataFile = await import("@/public/data/aed-data.json");
+    const aedDataFile: AEDDataFile = await import("@/public/aed-map/aed-data.json");
     const aedList = aedDataFile.DATA;
 
     // 거리 계산 및 정렬

@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Status, Wrapper } from "@googlemaps/react-wrapper";
-import { Position } from "../lib/types";
+import { Position } from "@/lib/aed-map/types";
 import AEDListMapComponent, { AEDListMapHandle } from "./AEDListMapComponent";
 import IconTarget from "./IconTarget";
 
