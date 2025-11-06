@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
@@ -21,6 +21,7 @@ export default function ShowroomScene() {
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -202,6 +203,9 @@ export default function ShowroomScene() {
     scene.add(table);
     console.log("Table created at Y:", CONSTANTS.TABLE_POSITION.Y);
 
+    // 로딩 상태 설정
+    setIsLoading(true);
+
     // OBJ 모델 로드 (마네킹 5개)
     const loader = new OBJLoader();
 
@@ -260,6 +264,14 @@ export default function ShowroomScene() {
         // 카메라 자동 조정 (전체 씬을 고려)
         autoAdjustCamera(camera, controls, overallSize, centerY);
         console.log("=== Manikins setup complete ===");
+
+        // 렌더링 준비 완료 - 로딩 상태 해제
+        // 다음 프레임에 로딩 화면을 숨기도록 약간의 지연 추가 (부드러운 전환)
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            setIsLoading(false);
+          });
+        });
       },
       (progress) => {
         if (progress.total > 0) {
@@ -269,6 +281,7 @@ export default function ShowroomScene() {
       },
       (error) => {
         console.error("=== Error loading manikin ===", error);
+        setIsLoading(false); // 에러 발생 시에도 로딩 상태 해제
       }
     );
 
@@ -328,17 +341,72 @@ export default function ShowroomScene() {
   }, []);
 
   return (
-    <div
-      ref={containerRef}
-      className="w-screen h-screen"
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100vw',
-        height: '100vh',
-        overflow: 'hidden'
-      }}
-    />
+    <>
+      {/* 3D 씬 컨테이너 */}
+      <div
+        ref={containerRef}
+        className="w-screen h-screen"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          overflow: 'hidden'
+        }}
+      />
+      
+      {/* 로딩 화면 */}
+      {isLoading && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(42, 42, 42, 0.9)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            color: '#ffffff',
+          }}
+        >
+          {/* 로딩 스피너 */}
+          <div
+            style={{
+              width: '50px',
+              height: '50px',
+              border: '4px solid rgba(255, 255, 255, 0.3)',
+              borderTop: '4px solid #ffffff',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              marginBottom: '20px',
+            }}
+          />
+          
+          {/* 로딩 텍스트 */}
+          <div
+            style={{
+              fontSize: '18px',
+              fontWeight: '500',
+              letterSpacing: '0.5px',
+            }}
+          >
+            Loading 3D Models...
+          </div>
+          
+          {/* CSS 애니메이션 */}
+          <style jsx>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
+        </div>
+      )}
+    </>
   );
 }
