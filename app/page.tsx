@@ -8,6 +8,7 @@ export default function Home() {
   const sections = [
     { id: "section1", name: "AED Map" },
     { id: "section2", name: "Training Simulator" },
+    { id: "section3", name: "Manikin Showroom" },
   ];
 
   const handleSectionClick = (sectionId: string) => {
@@ -20,6 +21,10 @@ export default function Home() {
 
   const handleOpenTrainingSimulator = () => {
     window.open("/training-simulator", "_blank");
+  };
+
+  const handleOpenManikinShowroom = () => {
+    window.open("/manikin-showroom", "_blank");
   };
 
   const renderActiveContent = () => {
@@ -80,6 +85,37 @@ export default function Home() {
             "
           >
             Training Simulator 열기
+          </button>
+        </div>
+      );
+    }
+
+    if (activeSection === "section3") {
+      return (
+        <div className="p-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            Manikin Showroom
+          </h2>
+          <p className="text-gray-600 mb-8">
+            다양한 마네킹 모델을 확인하세요.
+          </p>
+          <button
+            onClick={handleOpenManikinShowroom}
+            className="
+              px-6 py-3
+              bg-[#FF5252]
+              text-white
+              font-semibold
+              rounded-lg
+              shadow-lg
+              hover:bg-[#FF3838]
+              transition-all
+              duration-300
+              hover:shadow-xl
+              hover:scale-105
+            "
+          >
+            Manikin Showroom 열기
           </button>
         </div>
       );
