@@ -1,33 +1,29 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { Suspense } from "react";
+
+// Three.js는 클라이언트 사이드에서만 작동하므로 dynamic import 사용
+const ShowroomScene = dynamic(
+  () => import("@/components/manikin-showroom/ShowroomScene"),
+  { ssr: false }
+);
+
 export default function ManikinShowroomPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
-      {/* Header */}
-      <header className="bg-black/30 border-b border-gray-700 shadow-lg backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <h1 className="text-3xl font-bold text-white">
-            Manikin Showroom
-          </h1>
-          <p className="text-gray-300 mt-2">
-            3D 마네킹 모델 뷰어 (준비 중)
-          </p>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <div className="flex items-center justify-center min-h-[calc(100vh-100px)]">
-        <div className="text-center">
-          <div className="text-6xl mb-4">🚧</div>
-          <h2 className="text-2xl font-bold text-white mb-2">
-            3D 렌더링 준비 중
-          </h2>
-          <p className="text-gray-400">
-            Three.js 또는 React Three Fiber를 사용하여<br />
-            3D 마네킹 모델을 렌더링할 예정입니다.
-          </p>
-        </div>
-      </div>
+    <div className="w-screen h-screen overflow-hidden">
+      <Suspense
+        fallback={
+          <div className="flex items-center justify-center w-full h-full bg-gray-900">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+              <p className="text-gray-300">3D 모델 로딩 중...</p>
+            </div>
+          </div>
+        }
+      >
+        <ShowroomScene />
+      </Suspense>
     </div>
   );
 }
