@@ -84,15 +84,39 @@ export const DAMPING = {
 // ============================================
 
 /**
+ * Three.js 좌표계 (Right-Handed Coordinate System)
+ * 
+ *     Y (위)
+ *     |
+ *     |
+ *     +---- X (오른쪽)
+ *    /
+ *   /
+ *  Z (앞으로/뷰어 방향)
+ * 
+ * - X축: 좌우 (양수: 오른쪽, 음수: 왼쪽)
+ * - Y축: 상하 (양수: 위로 올라감, 음수: 아래로 내려감) ⬆️
+ * - Z축: 전후 (양수: 앞으로/뷰어 방향, 음수: 뒤로/뷰어 반대 방향)
+ * 
+ * 카메라를 위로 올리려면 Y 값을 증가시키세요!
+ * 예: Y: 50 → Y: 80 (30만큼 위로 올라감)
+ */
+
+/**
  * 카메라 초기 위치 (x, y, z)
- * - x: 좌우 위치 (양수: 오른쪽, 음수: 왼쪽)
- * - y: 높이 (양수: 위, 음수: 아래)
- * - z: 전후 위치 (양수: 앞, 음수: 뒤)
+ * - X: 좌우 위치 (양수: 오른쪽, 음수: 왼쪽)
+ * - Y: 높이 (양수: 위, 음수: 아래)
+ * - Z: 전후 위치 (양수: 앞, 음수: 뒤)
+ * 
+ * ⚠️ 중요: 이 값은 마네킹이 로드되기 전의 임시 위치입니다.
+ * 마네킹이 로드되면 autoAdjustCamera 함수가 호출되어 카메라 위치가 재설정됩니다.
+ * 
+ * 실제 카메라 높이를 조정하려면 아래의 AUTO_CAMERA.HEIGHT_OFFSET 값을 변경하세요!
  */
 export const INITIAL_CAMERA_POSITION = {
-  X: 0,
-  Y: 50,
-  Z: 200,
+  X: 0,    // 좌우 중앙
+  Y: 10,   // 높이 (마네킹 로드 전 임시 값)
+  Z: 300,  // 전후 거리
 } as const;
 
 /**
@@ -226,7 +250,20 @@ export const AUTO_CAMERA = {
    * - 값이 클수록 카메라가 더 멀리 위치
    * - 권장 범위: 1.0 ~ 2.0
    */
-  DISTANCE_MULTIPLIER: 1.2,
+  DISTANCE_MULTIPLIER: 0.5,
+
+  /**
+   * 카메라 높이 오프셋
+   * - 마네킹 중심 높이에서 카메라를 얼마나 위로 올릴지 설정
+   * - 양수: 카메라가 위로 올라감 (위에서 내려다보는 각도)
+   * - 0: 마네킹 중심 높이와 동일
+   * - 음수: 카메라가 아래로 내려감
+   * - 예: 30 → 마네킹 중심보다 30 단위 위에서 카메라 배치
+   * 
+   * ⚠️ 이 값이 실제 카메라 높이를 결정합니다!
+   * INITIAL_CAMERA_POSITION.Y를 변경해도 마네킹 로드 후에는 이 값으로 덮어씌워집니다.
+   */
+  HEIGHT_OFFSET: 3,
 } as const;
 
 // ============================================
@@ -241,12 +278,12 @@ export const TABLE_SIZE = {
    * 테이블 길이 (가로)
    * - 마네킹 크기보다 충분히 커야 함
    */
-  WIDTH: 3.0,
+  WIDTH: 10.0,
 
   /**
    * 테이블 두께 (높이)
    */
-  HEIGHT: 0.1,
+  HEIGHT: 2,
 
   /**
    * 테이블 깊이 (세로)
@@ -296,3 +333,141 @@ export const TABLE_MATERIAL = {
  * - 테이블 위치 + 테이블 두께/2 + 이 값 = 마네킹 바닥 위치
  */
 export const MANIKIN_TABLE_OFFSET = 0.05;
+
+// ============================================
+// 포스터 설정
+// ============================================
+
+/**
+ * 포스터 크기
+ */
+export const POSTER_SIZE = {
+  /**
+   * 포스터 너비
+   */
+  WIDTH: 1.5,
+
+  /**
+   * 포스터 높이
+   */
+  HEIGHT: 1.2,
+} as const;
+
+/**
+ * 포스터 스타일 설정
+ */
+export const POSTER_STYLE = {
+  /**
+   * 배경색 (16진수 컬러 코드)
+   */
+  BACKGROUND_COLOR: "#ffffff",
+
+  /**
+   * 텍스트 색상
+   */
+  TEXT_COLOR: "#000000",
+
+  /**
+   * 제목 텍스트 크기 (픽셀) - 큰 폰트
+   */
+  TITLE_TEXT_SIZE: 72,
+
+  /**
+   * 설명 텍스트 크기 (픽셀) - 작은 폰트
+   */
+  DESCRIPTION_TEXT_SIZE: 24,
+
+  /**
+   * 폰트 패밀리
+   */
+  FONT_FAMILY: "Arial, sans-serif",
+
+  /**
+   * 테이블 앞면에서의 오프셋 (테이블 앞쪽으로 얼마나 떨어뜨릴지)
+   */
+  FRONT_OFFSET: -0.1,
+
+  /**
+   * 테이블 위에서의 높이 오프셋
+   */
+  HEIGHT_OFFSET: -0.7,
+} as const;
+
+/**
+ * 마네킹 정보 (모델 이름과 설명)
+ */
+export const MANIKIN_INFO = [
+  {
+    name: "IM16-R",
+    description: "Adult CPR Training Manikin\nHigh-quality materials\nRealistic anatomy",
+  },
+  {
+    name: "IM16-JHS",
+    description: "Junior High School Manikin\nPerfect for training\nDurable construction",
+  },
+  {
+    name: "IM16-RO",
+    description: "Infant CPR Manikin\nLife-like features\nEasy to use",
+  },
+  {
+    name: "IM17-P",
+    description: "Professional Training Model\nAdvanced features\nIndustry standard",
+  },
+  {
+    name: "Brayden Pro",
+    description: "Professional CPR Manikin\nPremium quality\nComprehensive training",
+  },
+] as const;
+
+// ============================================
+// 지면 설정
+// ============================================
+
+/**
+ * 지면 크기 (가로 x 세로)
+ */
+export const GROUND_SIZE = {
+  /**
+   * 지면 너비 (가로)
+   */
+  WIDTH: 50,
+
+  /**
+   * 지면 깊이 (세로)
+   */
+  HEIGHT: 50,
+} as const;
+
+/**
+ * 지면 위치
+ */
+export const GROUND_POSITION = {
+  /**
+   * 지면의 Y 위치 (높이)
+   * - 테이블보다 약간 낮게 설정
+   */
+  Y: -0.5,
+} as const;
+
+/**
+ * 지면 재질 설정
+ */
+export const GROUND_MATERIAL = {
+  /**
+   * 지면 색상 (16진수 컬러 코드)
+   * - 0x808080: 회색
+   * - 0x4a4a4a: 어두운 회색
+   * - 0x2a2a2a: 매우 어두운 회색
+   */
+  COLOR: 0x4a4a4a,
+
+  /**
+   * 거칠기 (0.0 ~ 1.0)
+   */
+  ROUGHNESS: 0.8,
+
+  /**
+   * 금속성 (0.0 ~ 1.0)
+   */
+  METALNESS: 0.0,
+} as const;
