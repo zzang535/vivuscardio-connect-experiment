@@ -78,12 +78,13 @@ export default function ScreenTraining({
 }: ScreenTrainingProps) {
   const [showDebugModal, setShowDebugModal] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
-  const [manikinSize, setManikinSize] = useState<"large" | "medium">("medium");
+  const [manikinSize, setManikinSize] = useState<"large" | "medium" | "small">("medium");
 
   // 브라우저 width에 따라 마네킹 사이즈 결정
   useEffect(() => {
     const handleResize = () => {
-      setManikinSize("medium");
+      const width = window.innerWidth;
+      setManikinSize(width <= LAYOUT_SETTINGS.MANIKIN_SIZE_BREAKPOINT ? "small" : "medium");
     };
 
     // 초기 사이즈 설정
@@ -120,7 +121,7 @@ export default function ScreenTraining({
     }
   }, [trainingPhase, onLoadingComplete]);
   return (
-    <div className="w-full h-full bg-gray-50">
+    <div className="w-full h-full bg-gray-50 overflow-x-auto" style={{ minWidth: '1800px' }}>
       {/* 헤더 영역 - 60px */}
       <div style={{ height: '60px' }}>
         <Header

@@ -30,7 +30,7 @@ interface ManikinProps {
   onVentilationVolumeChange: (volume: number) => void;
   onVentilationStateChange: (isVentilating: boolean) => void;
   onVentilationComplete: (data: { volume: number; duration: number; timestamp: number }) => void;
-  size?: "large" | "medium";
+  size?: "large" | "medium" | "small";
   disabled?: boolean;
 }
 
