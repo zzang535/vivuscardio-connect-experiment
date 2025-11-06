@@ -183,12 +183,13 @@ export const SCENE_BACKGROUND_COLOR = 0x2a2a2a;
 
 /**
  * 카메라 FOV (Field of View, 시야각)
- * - 값이 클수록: 넓은 시야 (광각 효과)
- * - 값이 작을수록: 좁은 시야 (망원 효과)
+ * - 값이 클수록: 넓은 시야 (광각 효과, 원근 왜곡 증가)
+ * - 값이 작을수록: 좁은 시야 (망원 효과, 원근 왜곡 감소, 평평함)
  * - 권장 범위: 30 ~ 75
- * - 기본값: 50
+ * - 원근 왜곡을 줄이려면: 30-40 정도 권장
+ * - 기본값: 35 (왜곡 최소화)
  */
-export const CAMERA_FOV = 50;
+export const CAMERA_FOV = 35;
 
 /**
  * 카메라 클리핑 평면
@@ -238,7 +239,7 @@ export const MANIKIN_MATERIAL = {
 /**
  * OBJ 파일 경로
  */
-export const MODEL_PATH = "/manikin-showroom/base.obj";
+export const MODEL_PATH = "/manikin-showroom/manikin.obj";
 
 /**
  * 모델 자동 카메라 조정 설정
@@ -247,10 +248,12 @@ export const AUTO_CAMERA = {
   /**
    * 자동 거리 배율
    * - 모델 크기에 따라 카메라 거리를 자동 계산할 때 사용
-   * - 값이 클수록 카메라가 더 멀리 위치
-   * - 권장 범위: 1.0 ~ 2.0
+   * - 값이 클수록 카메라가 더 멀리 위치 (원근 왜곡 감소)
+   * - 값이 작을수록 카메라가 가까이 위치 (원근 왜곡 증가)
+   * - 권장 범위: 0.5 ~ 1.5
+   * - 원근 왜곡을 줄이려면: 0.8 ~ 1.2 정도 권장
    */
-  DISTANCE_MULTIPLIER: 0.5,
+  DISTANCE_MULTIPLIER: 0.65,
 
   /**
    * 카메라 높이 오프셋
@@ -288,7 +291,7 @@ export const TABLE_SIZE = {
   /**
    * 테이블 깊이 (세로)
    */
-  DEPTH: 1.5,
+  DEPTH: 2,
 } as const;
 
 /**
@@ -456,10 +459,11 @@ export const GROUND_MATERIAL = {
   /**
    * 지면 색상 (16진수 컬러 코드)
    * - 0x808080: 회색
+   * - 0x6a6a6a: 밝은 회색
    * - 0x4a4a4a: 어두운 회색
    * - 0x2a2a2a: 매우 어두운 회색
    */
-  COLOR: 0x4a4a4a,
+  COLOR: 0x6a6a6a, // 약간 밝게 조정
 
   /**
    * 거칠기 (0.0 ~ 1.0)

@@ -13,6 +13,8 @@ import {
   positionMultipleManikinsOnTable,
   autoAdjustCamera,
   createPoster,
+  loadAEDModelOnTable,
+  createLogoBanner,
 } from "@/lib/manikin-showroom/objects";
 
 export default function ShowroomScene() {
@@ -198,10 +200,50 @@ export default function ShowroomScene() {
     scene.add(ground);
     console.log("Ground created at Y:", CONSTANTS.GROUND_POSITION.Y);
 
-    // 테이블 생성
-    const table = createTable();
-    scene.add(table);
-    console.log("Table created at Y:", CONSTANTS.TABLE_POSITION.Y);
+    // 로고 배너 생성 (마네킹 뒤쪽에 배치, 지면에 닿도록)
+    const table1Width = 13;
+    // positionY는 함수 내부에서 계산되므로 임시 값 전달 (실제로는 받침대를 기준으로 계산됨)
+    const bannerZ = -8; // 마네킹 뒤쪽 (Z축 음수)
+    createLogoBanner(scene, 0, 0, bannerZ, 15, 8); // 크기: 15 x 8, Y 위치는 함수 내부에서 지면 기준으로 계산
+
+    // 첫 번째 테이블 생성 (가로 방향, 길이 13)
+    const table1 = createTable(table1Width, CONSTANTS.TABLE_SIZE.HEIGHT, CONSTANTS.TABLE_SIZE.DEPTH);
+    scene.add(table1);
+    console.log("Table 1 created at Y:", CONSTANTS.TABLE_POSITION.Y, "width:", table1Width);
+
+    // 두 번째 테이블 생성 (세로 방향, L자 형태로 배치, 길이는 반으로)
+    const table2Width = table1Width / 2; // 첫 번째 테이블 길이의 반
+    const table2 = createTable(
+      table2Width, // 길이를 반으로
+      CONSTANTS.TABLE_SIZE.HEIGHT, // 높이는 동일
+      CONSTANTS.TABLE_SIZE.DEPTH // 깊이는 동일
+    );
+    // 두 번째 테이블을 90도 회전시켜 세로 방향으로 만들고
+    // 첫 번째 테이블의 오른쪽 끝과 겹치도록 배치하여 L자 형태 만듦
+    // 회전 후: WIDTH(table2Width) → DEPTH, DEPTH(1.5) → WIDTH
+    const table1HalfWidth = table1Width / 2; // 첫 번째 테이블의 반 너비
+    const table2RotatedWidth = CONSTANTS.TABLE_SIZE.DEPTH / 2; // 회전 후 두 번째 테이블의 반 너비 (0.75)
+    const table2RotatedDepth = table2Width / 2; // 회전 후 두 번째 테이블의 반 깊이
+    
+    // 두 번째 테이블의 중심 위치 계산
+    // X: 첫 번째 테이블의 오른쪽 끝 - 두 번째 테이블의 반 너비 (겹치도록)
+    // Z: 첫 번째 테이블의 앞쪽으로 배치하여 L자 형태 만듦
+    table2.position.set(
+      table1HalfWidth + table2RotatedWidth, // 겹치도록 배치
+      CONSTANTS.TABLE_POSITION.Y, // 같은 높이
+      table2RotatedDepth - CONSTANTS.TABLE_SIZE.DEPTH / 2 // 앞쪽으로 배치
+    );
+    // 두 번째 테이블을 90도 회전시켜 세로 방향으로 만듦
+    table2.rotation.y = Math.PI / 2; // 90도 회전 (Y축 기준)
+    
+    // AED-T 테이블 색상을 빨간색(약간 죽인 톤)으로 변경
+    // 원본 #CC0000에서 약간 채도와 밝기를 낮춘 #B01A1A
+    if (table2.material instanceof THREE.MeshStandardMaterial) {
+      table2.material.color.setHex(0xB01A1A);
+    }
+    
+    scene.add(table2);
+    console.log("Table 2 created (half width) at X:", table1HalfWidth + table2RotatedWidth, "Z:", table2RotatedDepth - CONSTANTS.TABLE_SIZE.DEPTH / 2, "rotation: 90deg, color: red (#B01A1A)");
 
     // 로딩 상태 설정
     setIsLoading(true);
@@ -262,8 +304,52 @@ export default function ShowroomScene() {
         console.log("Overall scene size:", overallSize.x.toFixed(2), overallSize.y.toFixed(2), overallSize.z.toFixed(2));
 
         // 카메라 자동 조정 (전체 씬을 고려)
-        autoAdjustCamera(camera, controls, overallSize, centerY);
+        // IM17-P 마네킹(인덱스 3)의 위치를 카메라 타겟으로 설정
+        const IM17_P_INDEX = 3; // IM17-P는 MANIKIN_INFO 배열의 인덱스 3
+        const im17pX = positions.length > IM17_P_INDEX ? positions[IM17_P_INDEX] : 0;
+        const im17pZ = 0; // 마네킹은 테이블 중앙(Z=0)에 배치됨
+        
+        autoAdjustCamera({
+          camera,
+          controls,
+          manikinSize: overallSize,
+          centerY,
+          targetX: im17pX, // IM17-P의 X 좌표
+          targetZ: im17pZ, // IM17-P의 Z 좌표 (테이블 중앙)
+          manikinPositions: positions,
+        });
         console.log("=== Manikins setup complete ===");
+
+        // 두 번째 테이블 위에 AED-T 모델 로드
+        const table1HalfWidthCalc = table1Width / 2;
+        const table2WidthCalc = table1Width / 2;
+        const table2RotatedWidthCalc = CONSTANTS.TABLE_SIZE.DEPTH / 2;
+        const table2RotatedDepthCalc = table2WidthCalc / 2;
+        const table2PositionX = table1HalfWidthCalc + table2RotatedWidthCalc;
+        const table2PositionZ = table2RotatedDepthCalc - CONSTANTS.TABLE_SIZE.DEPTH / 2;
+        const table2TopY = CONSTANTS.TABLE_POSITION.Y + CONSTANTS.TABLE_SIZE.HEIGHT / 2;
+
+        // AED-T 모델 로드 및 포스터 생성
+        const table2RotationY = Math.PI / 2; // 두 번째 테이블의 회전 각도
+        loadAEDModelOnTable(
+          scene,
+          table2PositionX,
+          table2PositionZ + 1,
+          table2TopY,
+          Math.PI / 2 * 3,
+          (modelPositionX) => {
+            // AED-T 앞에 포스터 생성 (두 번째 테이블의 회전 각도 고려)
+            const aedPoster = createPoster(
+              "AED-T",
+              "Automatic External Defibrillator\nTraining Device\nProfessional Grade",
+              modelPositionX,
+              table2RotationY, // 테이블 회전 각도 전달
+              table2PositionZ + 1 // 테이블 Z 위치 전달
+            );
+            scene.add(aedPoster);
+            console.log(`Created poster for AED-T at X: ${modelPositionX.toFixed(2)}, Z: ${(table2PositionZ + 1).toFixed(2)}, rotation: ${table2RotationY.toFixed(2)}`);
+          }
+        );
 
         // 렌더링 준비 완료 - 로딩 상태 해제
         // 다음 프레임에 로딩 화면을 숨기도록 약간의 지연 추가 (부드러운 전환)
