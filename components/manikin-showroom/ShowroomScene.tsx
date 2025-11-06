@@ -23,6 +23,13 @@ export default function ShowroomScene() {
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
+  
+  // 모든 객체 로딩 상태 추적
+  const loadingStateRef = useRef({
+    manikins: false,
+    aedModel: false,
+    logoBanner: false,
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -200,11 +207,39 @@ export default function ShowroomScene() {
     scene.add(ground);
     console.log("Ground created at Y:", CONSTANTS.GROUND_POSITION.Y);
 
+    // 모든 객체 로딩 상태 초기화
+    loadingStateRef.current = {
+      manikins: false,
+      aedModel: false,
+      logoBanner: false,
+    };
+    
+    // 로딩 상태 설정
+    setIsLoading(true);
+    
+    // 모든 객체 로딩 완료 확인 함수
+    const checkAllLoaded = () => {
+      const { manikins, aedModel, logoBanner } = loadingStateRef.current;
+      if (manikins && aedModel && logoBanner) {
+        // 모든 객체 로딩 완료 - 다음 프레임에 로딩 화면을 숨기도록 약간의 지연 추가 (부드러운 전환)
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            setIsLoading(false);
+            console.log("=== All objects loaded successfully ===");
+          });
+        });
+      }
+    };
+
     // 로고 배너 생성 (마네킹 뒤쪽에 배치, 지면에 닿도록)
     const table1Width = 13;
     // positionY는 함수 내부에서 계산되므로 임시 값 전달 (실제로는 받침대를 기준으로 계산됨)
     const bannerZ = -8; // 마네킹 뒤쪽 (Z축 음수)
-    createLogoBanner(scene, 0, 0, bannerZ, 15, 8); // 크기: 15 x 8, Y 위치는 함수 내부에서 지면 기준으로 계산
+    createLogoBanner(scene, 0, 0, bannerZ, 15, 8, () => {
+      // 로고 배너 로드 완료
+      loadingStateRef.current.logoBanner = true;
+      checkAllLoaded();
+    }); // 크기: 15 x 8, Y 위치는 함수 내부에서 지면 기준으로 계산
 
     // 첫 번째 테이블 생성 (가로 방향, 길이 13)
     const table1 = createTable(table1Width, CONSTANTS.TABLE_SIZE.HEIGHT, CONSTANTS.TABLE_SIZE.DEPTH);
@@ -244,9 +279,6 @@ export default function ShowroomScene() {
     
     scene.add(table2);
     console.log("Table 2 created (half width) at X:", table1HalfWidth + table2RotatedWidth, "Z:", table2RotatedDepth - CONSTANTS.TABLE_SIZE.DEPTH / 2, "rotation: 90deg, color: red (#B01A1A)");
-
-    // 로딩 상태 설정
-    setIsLoading(true);
 
     // OBJ 모델 로드 (마네킹 5개)
     const loader = new OBJLoader();
@@ -329,6 +361,10 @@ export default function ShowroomScene() {
         const table2PositionZ = table2RotatedDepthCalc - CONSTANTS.TABLE_SIZE.DEPTH / 2;
         const table2TopY = CONSTANTS.TABLE_POSITION.Y + CONSTANTS.TABLE_SIZE.HEIGHT / 2;
 
+        // 마네킹 로드 완료
+        loadingStateRef.current.manikins = true;
+        checkAllLoaded();
+
         // AED-T 모델 로드 및 포스터 생성
         const table2RotationY = Math.PI / 2; // 두 번째 테이블의 회전 각도
         loadAEDModelOnTable(
@@ -348,16 +384,12 @@ export default function ShowroomScene() {
             );
             scene.add(aedPoster);
             console.log(`Created poster for AED-T at X: ${modelPositionX.toFixed(2)}, Z: ${(table2PositionZ + 1).toFixed(2)}, rotation: ${table2RotationY.toFixed(2)}`);
+            
+            // AED-T 모델 로드 완료
+            loadingStateRef.current.aedModel = true;
+            checkAllLoaded();
           }
         );
-
-        // 렌더링 준비 완료 - 로딩 상태 해제
-        // 다음 프레임에 로딩 화면을 숨기도록 약간의 지연 추가 (부드러운 전환)
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            setIsLoading(false);
-          });
-        });
       },
       (progress) => {
         if (progress.total > 0) {
@@ -367,7 +399,9 @@ export default function ShowroomScene() {
       },
       (error) => {
         console.error("=== Error loading manikin ===", error);
-        setIsLoading(false); // 에러 발생 시에도 로딩 상태 해제
+        // 에러 발생 시에도 로딩 상태 업데이트 (로딩 화면이 계속 표시되지 않도록)
+        loadingStateRef.current.manikins = true;
+        checkAllLoaded();
       }
     );
 

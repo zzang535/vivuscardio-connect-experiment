@@ -394,6 +394,7 @@ export function autoAdjustCamera({
  * @param positionZ 배너의 Z 위치
  * @param width 배너 너비 (기본값: 20)
  * @param height 배너 높이 (기본값: 10)
+ * @param onLoadComplete 로드 완료 콜백 함수
  */
 export function createLogoBanner(
   scene: THREE.Scene,
@@ -401,7 +402,8 @@ export function createLogoBanner(
   positionY: number = 0,
   positionZ: number = -10,
   width: number = 20,
-  height: number = 10
+  height: number = 10,
+  onLoadComplete?: () => void
 ): void {
   const textureLoader = new THREE.TextureLoader();
   
@@ -489,10 +491,19 @@ export function createLogoBanner(
       scene.add(background);
       scene.add(logo);
       console.log(`Logo banner created at (${positionX.toFixed(2)}, ${positionY.toFixed(2)}, ${positionZ.toFixed(2)}), background size: ${width.toFixed(2)} x ${height.toFixed(2)}, logo size: ${finalWidth.toFixed(2)} x ${finalHeight.toFixed(2)}, stand size: ${standWidth.toFixed(2)} x ${standHeight.toFixed(2)} x ${standDepth.toFixed(2)}`);
+      
+      // 로드 완료 콜백 호출
+      if (onLoadComplete) {
+        onLoadComplete();
+      }
     },
     undefined,
     (error) => {
       console.error("=== Error loading logo banner ===", error);
+      // 에러 발생 시에도 콜백 호출 (로딩 상태 업데이트)
+      if (onLoadComplete) {
+        onLoadComplete();
+      }
     }
   );
 }
