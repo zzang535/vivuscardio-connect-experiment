@@ -401,14 +401,19 @@ export default function ShowroomScene() {
           });
         });
 
-        // userAddedObjects에서만 감지 (recursive=true로 자식까지 검색)
-        const intersects = raycaster.intersectObjects(userAddedObjectsRef.current, true);
-        console.log('intersects from userAddedObjects:', intersects.length);
-
-        // 디버깅: scene 전체에서 검색해보기
+        // scene 전체에서 검색하되 userAddedObjects에 포함된 객체만 선택
         const allIntersects = raycaster.intersectObjects(scene.children, true);
-        console.log('intersects from scene.children:', allIntersects.length);
-        console.log('allIntersects:', allIntersects.map(i => ({ object: i.object.uuid, position: i.object.position })));
+        console.log('all intersects from scene:', allIntersects.length);
+
+        // userAddedObjects에 포함된 객체만 필터링
+        const userAddedObjectUuids = new Set(userAddedObjectsRef.current.map(obj => obj.uuid));
+        const intersects = allIntersects.filter(intersect =>
+          userAddedObjectUuids.has(intersect.object.uuid)
+        );
+
+        console.log('filtered intersects (userAddedObjects only):', intersects.length);
+        console.log('userAddedObjects uuids:', Array.from(userAddedObjectUuids));
+
         if (intersects.length > 0) {
           console.log('첫 번째 intersect:', intersects[0]);
         }
