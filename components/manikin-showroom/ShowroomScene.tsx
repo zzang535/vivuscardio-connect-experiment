@@ -379,12 +379,14 @@ export default function ShowroomScene() {
         raycaster.setFromCamera(mouse, camera);
 
         // 각 객체의 정보 출력
+        console.log('userAddedObjects count:', userAddedObjectsRef.current.length);
         userAddedObjectsRef.current.forEach((obj, idx) => {
           console.log(`Object ${idx}:`, {
+            uuid: obj.uuid,
             position: obj.position,
             visible: obj.visible,
-            geometry: obj.geometry,
-            material: obj.material
+            geometry: obj.geometry.type,
+            material: obj.material.type
           });
         });
 
@@ -530,6 +532,7 @@ export default function ShowroomScene() {
           requestAnimationFrame(() => {
             // 저장된 오브젝트들 로드
             const loadedObjects = loadObjectsFromStorage();
+            console.log('Loaded objects from storage:', loadedObjects.length);
             setUserAddedObjects(loadedObjects);
 
             setIsLoading(false);
