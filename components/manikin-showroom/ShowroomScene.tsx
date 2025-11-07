@@ -58,6 +58,9 @@ export default function ShowroomScene() {
   const [editingObject, setEditingObject] = useState<THREE.Mesh | null>(null);
   const [originalPosition, setOriginalPosition] = useState<THREE.Vector3 | null>(null);
 
+  // 배치 가능 여부 상태
+  const [isPlacementValid, setIsPlacementValid] = useState(true);
+
   // 배치 모드 상태를 참조하기 위한 ref
   const isPlacementModeRef = useRef(isPlacementMode);
   isPlacementModeRef.current = isPlacementMode;
@@ -69,6 +72,8 @@ export default function ShowroomScene() {
   originalPositionRef.current = originalPosition;
   const userAddedObjectsRef = useRef<THREE.Mesh[]>(userAddedObjects);
   userAddedObjectsRef.current = userAddedObjects;
+  const isPlacementValidRef = useRef(isPlacementValid);
+  isPlacementValidRef.current = isPlacementValid;
 
   // 로컬 스토리지에서 초기 객체 로딩을 한 번만 실행하기 위한 플래그
   const initialObjectsLoadedRef = useRef(false);
@@ -342,6 +347,12 @@ export default function ShowroomScene() {
     const handleRendererClick = (event: MouseEvent) => {
       // 배치 모드일 때의 동작
       if (isPlacementModeRef.current && objectToPlaceRef.current) {
+        // 유효하지 않은 위치에는 배치할 수 없음
+        if (!isPlacementValidRef.current) {
+          console.log("Placement is invalid, cannot place object.");
+          return;
+        }
+
         // 신규 배치 또는 재배치
         if (editingObjectRef.current) {
           // 편집 모드: 기존 객체 위치 업데이트 및 다시 표시
@@ -769,6 +780,27 @@ export default function ShowroomScene() {
       }
     );
 
+    // 충돌 감지 헬퍼 함수
+    const checkCollision = (object: THREE.Mesh, objects: THREE.Mesh[]): boolean => {
+      if (!object) return false;
+      const box1 = new THREE.Box3().setFromObject(object);
+      // 바운딩 박스를 약간 확장하여 미세한 겹침을 방지
+      box1.expandByScalar(-0.01);
+
+      for (const otherObject of objects) {
+        if (object === otherObject) continue;
+        // 편집 중인 객체는 충돌 검사에서 제외
+        if (editingObjectRef.current && otherObject.uuid === editingObjectRef.current.uuid) {
+          continue;
+        }
+        const box2 = new THREE.Box3().setFromObject(otherObject);
+        if (box1.intersectsBox(box2)) {
+          return true;
+        }
+      }
+      return false;
+    };
+
     // 애니메이션 루프
     const animate = () => {
       requestAnimationFrame(animate);
@@ -793,25 +825,84 @@ export default function ShowroomScene() {
       }
 
       // 배치 모드일 때 로직 처리
-      if (isPlacementModeRef.current && objectToPlaceRef.current && placementIndicatorRef.current) {
-        raycaster.setFromCamera(mouseRef.current, camera);
-        const intersection = new THREE.Vector3();
-        raycaster.ray.intersectPlane(groundPlane, intersection);
+      if (
+        isPlacementModeRef.current &&
+        objectToPlaceRef.current &&
+        placementIndicatorRef.current &&
+        cameraRef.current
+      ) {
+        raycaster.setFromCamera(mouseRef.current, cameraRef.current);
 
-        const gridSize = 1; // 그리드 한 칸의 크기
+        // 광선 투사 대상: 지면 + 사용자가 추가한 객체들
+        const objectsToIntersect = [ground, ...userAddedObjectsRef.current];
+        const intersects = raycaster.intersectObjects(objectsToIntersect, false);
 
-        // 고스트 객체 위치 업데이트 (유틸리티 함수 사용)
-        placeObjectOnGrid(objectToPlaceRef.current, intersection, gridSize);
+        let isIntersecting = false;
 
-        // 인디케이터 위치 및 가시성 업데이트
-        const snappedPosition = snapToGrid(intersection, gridSize);
-        placementIndicatorRef.current.position.set(
-          snappedPosition.x,
-          CONSTANTS.GROUND_POSITION.Y + 0.02,
-          snappedPosition.z
-        );
-        placementIndicatorRef.current.visible = true;
+        if (intersects.length > 0) {
+          const intersect = intersects[0];
+          const { point, object, face } = intersect;
+
+          // 윗면 또는 지면을 클릭했는지 확인
+          const isTopFace = face && face.normal.y > 0.99;
+          const isGround = object === ground;
+
+          if (isTopFace || isGround) {
+            isIntersecting = true;
+            const ghostObject = objectToPlaceRef.current;
+            const objectHeight = (ghostObject.geometry as THREE.BoxGeometry).parameters.height;
+            const gridSize = 1;
+
+            // 스냅된 위치 계산
+            const snappedPoint = snapToGrid(point, gridSize);
+
+            // Y 위치 계산 (지면 또는 다른 객체 위)
+            const newY = isGround
+              ? CONSTANTS.GROUND_POSITION.Y + objectHeight / 2
+              : object.position.y + (object.geometry as THREE.BoxGeometry).parameters.height / 2 + objectHeight / 2;
+
+            ghostObject.position.set(snappedPoint.x, newY, snappedPoint.z);
+
+            // 충돌 검사
+            const hasCollision = checkCollision(ghostObject, userAddedObjectsRef.current);
+            setIsPlacementValid(!hasCollision);
+
+            // 인디케이터 위치 및 가시성 업데이트
+            placementIndicatorRef.current.position.set(
+              snappedPoint.x,
+              isGround ? CONSTANTS.GROUND_POSITION.Y + 0.02 : object.position.y + (object.geometry as THREE.BoxGeometry).parameters.height / 2 + 0.01,
+              snappedPoint.z
+            );
+            placementIndicatorRef.current.visible = true;
+          }
+        }
+
+        if (!isIntersecting) {
+          // 어떤 유효한 면에도 교차하지 않으면 배치 불가능
+          setIsPlacementValid(false);
+          if (placementIndicatorRef.current) {
+            placementIndicatorRef.current.visible = false;
+          }
+          // 고스트 객체를 멀리 보냄
+          if (objectToPlaceRef.current) {
+            objectToPlaceRef.current.position.y = -1000;
+          }
+        }
+
+        // 배치 가능 여부에 따라 고스트 객체 색상 변경
+        const ghostObject = objectToPlaceRef.current;
+        const newColor = isPlacementValidRef.current ? 0xffffff : 0xff0000; // 유효: 흰색, 무효: 빨간색
+        const materials = ghostObject.material as THREE.MeshStandardMaterial[];
+        materials.forEach(material => {
+          // 바닥면(하늘색)은 색상 변경에서 제외
+          if (material.color.getHex() !== 0x4a9eff) {
+            material.color.setHex(newColor);
+          }
+        });
+      } else if (placementIndicatorRef.current) {
+        placementIndicatorRef.current.visible = false;
       }
+
 
       controls.update();
       renderer.render(scene, camera);
