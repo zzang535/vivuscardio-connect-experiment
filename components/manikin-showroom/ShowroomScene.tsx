@@ -249,36 +249,6 @@ export default function ShowroomScene() {
     const handleRendererClick = (event: MouseEvent) => {
       // 배치 모드일 때의 동작
       if (isPlacementModeRef.current && objectToPlaceRef.current) {
-        // 휴지통 영역 클릭 확인
-        const deleteZone = document.getElementById('delete-zone');
-        if (deleteZone) {
-          const rect = deleteZone.getBoundingClientRect();
-          const isInDeleteZone =
-            event.clientX >= rect.left &&
-            event.clientX <= rect.right &&
-            event.clientY >= rect.top &&
-            event.clientY <= rect.bottom;
-
-          if (isInDeleteZone && editingObjectRef.current) {
-            // 편집 중인 객체를 삭제
-            scene.remove(editingObjectRef.current);
-            setUserAddedObjects(prev => prev.filter(obj => obj !== editingObjectRef.current));
-
-            // 고스트 박스 제거
-            scene.remove(objectToPlaceRef.current);
-
-            // 상태 초기화
-            setObjectToPlace(null);
-            setIsPlacementMode(false);
-            setEditingObject(null);
-            setOriginalPosition(null);
-            if (placementIndicatorRef.current) {
-              placementIndicatorRef.current.visible = false;
-            }
-            return;
-          }
-        }
-
         // 신규 배치 또는 재배치
         if (editingObjectRef.current) {
           // 편집 모드: 기존 객체 위치 업데이트 및 다시 표시
@@ -1117,7 +1087,12 @@ export default function ShowroomScene() {
       {!isLoading && isPlacementMode && <PlacementModeGuide isEditMode={editingObject !== null} />}
 
       {/* 휴지통 영역 (편집 모드일 때만 표시) */}
-      {!isLoading && <DeleteZone isActive={isPlacementMode && editingObject !== null} />}
+      {!isLoading && (
+        <DeleteZone
+          isActive={isPlacementMode && editingObject !== null}
+          onDelete={handleDeleteObject}
+        />
+      )}
 
       {/* 로딩 화면 */}
       {isLoading && (

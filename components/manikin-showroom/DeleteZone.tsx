@@ -2,20 +2,22 @@
 
 interface DeleteZoneProps {
   isActive: boolean; // 편집 모드일 때만 활성화
+  onDelete: () => void; // 삭제 콜백 함수
 }
 
 /**
  * 휴지통 영역 컴포넌트
  * - 오른쪽 하단에 위치
  * - 편집 모드일 때만 표시
- * - 객체를 드래그하여 이 영역으로 가져오면 삭제
+ * - 객체를 드래그하여 이 영역으로 가져오거나 클릭하여 삭제
  */
-export default function DeleteZone({ isActive }: DeleteZoneProps) {
+export default function DeleteZone({ isActive, onDelete }: DeleteZoneProps) {
   if (!isActive) return null;
 
   return (
     <div
       id="delete-zone"
+      onClick={onDelete}
       style={{
         position: 'fixed',
         bottom: '20px',
@@ -36,6 +38,16 @@ export default function DeleteZone({ isActive }: DeleteZoneProps) {
         boxShadow: '0 8px 20px rgba(220, 38, 38, 0.4)',
         cursor: 'pointer',
         transition: 'all 0.2s',
+      }}
+      onMouseOver={(e) => {
+        e.currentTarget.style.backgroundColor = 'rgba(185, 28, 28, 0.95)';
+        e.currentTarget.style.transform = 'scale(1.05)';
+        e.currentTarget.style.boxShadow = '0 12px 24px rgba(220, 38, 38, 0.6)';
+      }}
+      onMouseOut={(e) => {
+        e.currentTarget.style.backgroundColor = 'rgba(220, 38, 38, 0.9)';
+        e.currentTarget.style.transform = 'scale(1)';
+        e.currentTarget.style.boxShadow = '0 8px 20px rgba(220, 38, 38, 0.4)';
       }}
     >
       {/* 휴지통 아이콘 */}
