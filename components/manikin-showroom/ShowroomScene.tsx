@@ -15,6 +15,7 @@ import {
   createPoster,
   loadAEDModelOnTable,
   createLogoBanner,
+  createGrid,
 } from "@/lib/manikin-showroom/objects";
 import {
   type AutoMoveState,
@@ -23,6 +24,8 @@ import {
   updateAutoMove,
   completeAutoMove,
 } from "@/lib/manikin-showroom/cameraAnimation";
+import { addBoxToScene } from "@/lib/manikin-showroom/objectControl";
+import ObjectController from "./ObjectController";
 
 export default function ShowroomScene() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -38,6 +41,61 @@ export default function ShowroomScene() {
     logoBanner: false,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [userAddedObjects, setUserAddedObjects] = useState<THREE.Mesh[]>([]);
+  const [isPlacementMode, setIsPlacementMode] = useState(false);
+  const [objectToPlace, setObjectToPlace] = useState<THREE.Mesh | null>(null);
+  const placementIndicatorRef = useRef<THREE.Mesh | null>(null);
+
+  // 배치 모드 상태를 참조하기 위한 ref
+  const isPlacementModeRef = useRef(isPlacementMode);
+  isPlacementModeRef.current = isPlacementMode;
+  const objectToPlaceRef = useRef(objectToPlace);
+  objectToPlaceRef.current = objectToPlace;
+
+  // 마우스 위치를 저장할 ref (Vector2 타입 사용)
+  const mouseRef = useRef(new THREE.Vector2());
+
+  const handleAddBox = () => {
+    if (isPlacementMode) return; // 이미 배치 모드이면 중복 실행 방지
+
+    setIsPlacementMode(true);
+
+    // 테이블과 유사한 크기 및 재질의 '고스트' 박스 생성
+    const boxGeometry = new THREE.BoxGeometry(
+      CONSTANTS.TABLE_SIZE.DEPTH, // width
+      CONSTANTS.TABLE_SIZE.HEIGHT, // height
+      CONSTANTS.TABLE_SIZE.DEPTH // depth
+    );
+    const ghostMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffffff, // 흰색
+      opacity: 0.5,
+      transparent: true,
+      roughness: 0.8,
+      metalness: 0.2,
+    });
+    const ghostBox = new THREE.Mesh(boxGeometry, ghostMaterial);
+    ghostBox.castShadow = true;
+    ghostBox.receiveShadow = true;
+    ghostBox.position.y = -1000; // 처음에는 보이지 않는 곳에 배치
+    sceneRef.current?.add(ghostBox);
+    setObjectToPlace(ghostBox);
+
+    // 배치 위치를 표시할 인디케이터 생성
+    if (!placementIndicatorRef.current) {
+      const indicatorGeometry = new THREE.PlaneGeometry(1, 1); // 1x1 크기
+      const indicatorMaterial = new THREE.MeshBasicMaterial({ 
+        color: 0x4A9EFF, 
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.5
+      });
+      const indicator = new THREE.Mesh(indicatorGeometry, indicatorMaterial);
+      indicator.rotation.x = -Math.PI / 2;
+      indicator.position.y = CONSTANTS.GROUND_POSITION.Y + 0.02; // 그리드보다 살짝 위에
+      sceneRef.current?.add(indicator);
+      placementIndicatorRef.current = indicator;
+    }
+  };
 
   // 자동 카메라 무빙 상태 추적
   const [isAutoMoving, setIsAutoMoving] = useState(false);
@@ -165,40 +223,60 @@ export default function ShowroomScene() {
     console.log("- maxDistance:", controls.maxDistance);
     console.log("- minTargetY (panning limit):", minTargetY);
 
-    // 이벤트 리스너 추가 (디버깅용)
-    const handleWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      console.log("Wheel event detected:", e.deltaY);
-    };
+    // --- 배치 모드 로직 ---
+    const raycaster = new THREE.Raycaster();
+    const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -CONSTANTS.GROUND_POSITION.Y);
 
-    const handleMouseDown = (e: MouseEvent) => {
-      console.log("Mouse down:", e.button, "at", e.clientX, e.clientY);
+    const handleWindowMouseMove = (event: MouseEvent) => {
+      const x = (event.clientX / window.innerWidth) * 2 - 1;
+      const y = -(event.clientY / window.innerHeight) * 2 + 1;
+      mouseRef.current.set(x, y);
     };
+    
+    window.addEventListener('mousemove', handleWindowMouseMove);
 
-    const handleMouseMove = (e: MouseEvent) => {
-      if (e.buttons !== 0) {
-        console.log("Mouse drag detected, buttons:", e.buttons);
+    const handleRendererClick = () => {
+      if (isPlacementModeRef.current && objectToPlaceRef.current) {
+        // 실제 객체 생성 및 배치
+        const newBox = objectToPlaceRef.current.clone();
+        (newBox.material as THREE.MeshStandardMaterial) = new THREE.MeshStandardMaterial({
+            color: 0xcccccc,
+            roughness: 0.8,
+            metalness: 0.2,
+        });
+        (newBox.material as THREE.MeshStandardMaterial).transparent = false;
+        (newBox.material as THREE.MeshStandardMaterial).opacity = 1;
+        
+        scene.add(newBox);
+        setUserAddedObjects(prev => [...prev, newBox]);
+
+        // 배치 모드 종료
+        scene.remove(objectToPlaceRef.current);
+        setObjectToPlace(null);
+        setIsPlacementMode(false);
+        if (placementIndicatorRef.current) {
+          placementIndicatorRef.current.visible = false;
+        }
       }
     };
 
-    const handleContextMenu = (e: Event) => {
-      e.preventDefault();
-      console.log("Context menu prevented");
+    renderer.domElement.addEventListener('click', handleRendererClick);
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isPlacementModeRef.current) {
+        // 배치 모드 취소
+        if (objectToPlaceRef.current) {
+          scene.remove(objectToPlaceRef.current);
+        }
+        setObjectToPlace(null);
+        setIsPlacementMode(false);
+        if (placementIndicatorRef.current) {
+          placementIndicatorRef.current.visible = false;
+        }
+      }
     };
 
-    // 이벤트 리스너 등록
-    renderer.domElement.addEventListener("wheel", handleWheel, {
-      passive: false,
-    });
-    renderer.domElement.addEventListener("mousedown", handleMouseDown);
-    renderer.domElement.addEventListener("mousemove", handleMouseMove);
-    renderer.domElement.addEventListener("contextmenu", handleContextMenu);
-    renderer.domElement.addEventListener(
-      "touchmove",
-      (e) => e.preventDefault(),
-      { passive: false }
-    );
+    window.addEventListener('keydown', handleKeyDown);
 
     console.log("Event listeners attached to canvas");
     console.log(
@@ -244,6 +322,11 @@ export default function ShowroomScene() {
     const ground = createGround();
     scene.add(ground);
     console.log("Ground created at Y:", CONSTANTS.GROUND_POSITION.Y);
+
+    // 그리드 생성
+    const grid = createGrid(CONSTANTS.GROUND_SIZE.WIDTH, CONSTANTS.GROUND_SIZE.WIDTH); // 50x50 그리드
+    scene.add(grid);
+    console.log("Grid created on the ground");
 
     // 모든 객체 로딩 상태 초기화
     loadingStateRef.current = {
@@ -508,6 +591,33 @@ export default function ShowroomScene() {
         }
       }
 
+      // 배치 모드일 때 로직 처리
+      if (isPlacementModeRef.current && objectToPlaceRef.current && placementIndicatorRef.current) {
+        raycaster.setFromCamera(mouseRef.current, camera);
+        const intersection = new THREE.Vector3();
+        raycaster.ray.intersectPlane(groundPlane, intersection);
+
+        const gridSize = 1; // 그리드 한 칸의 크기
+        const snappedX = Math.round(intersection.x / gridSize) * gridSize;
+        const snappedZ = Math.round(intersection.z / gridSize) * gridSize;
+
+        // 고스트 객체 위치 업데이트 (그리드에 스냅)
+        objectToPlaceRef.current.position.set(
+          snappedX,
+          CONSTANTS.GROUND_POSITION.Y + CONSTANTS.TABLE_SIZE.HEIGHT / 2,
+          snappedZ
+        );
+
+        // 인디케이터 위치 및 가시성 업데이트
+        placementIndicatorRef.current.position.set(snappedX, CONSTANTS.GROUND_POSITION.Y + 0.02, snappedZ);
+        placementIndicatorRef.current.visible = true;
+
+        // 배치 모드 중에는 OrbitControls 비활성화
+        controls.enabled = false;
+      } else {
+        controls.enabled = true;
+      }
+
       controls.update();
       renderer.render(scene, camera);
     };
@@ -532,10 +642,9 @@ export default function ShowroomScene() {
       console.log("=== Cleaning up Three.js scene ===");
       window.removeEventListener("resize", handleResize);
 
-      renderer.domElement.removeEventListener("wheel", handleWheel);
-      renderer.domElement.removeEventListener("mousedown", handleMouseDown);
-      renderer.domElement.removeEventListener("mousemove", handleMouseMove);
-      renderer.domElement.removeEventListener("contextmenu", handleContextMenu);
+      window.removeEventListener('mousemove', handleWindowMouseMove);
+      renderer.domElement.removeEventListener('click', handleRendererClick);
+      window.removeEventListener('keydown', handleKeyDown);
 
       if (
         container &&
@@ -874,6 +983,9 @@ export default function ShowroomScene() {
           </div>
         </div>
       )}
+
+      {/* 오브젝트 컨트롤러 */}
+      {!isLoading && <ObjectController onAddBox={handleAddBox} />}
 
       {/* 로딩 화면 */}
       {isLoading && (

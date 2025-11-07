@@ -575,3 +575,17 @@ export function loadAEDModelOnTable(
     }
   );
 }
+
+/**
+ * 바닥 그리드 생성
+ * @param size 그리드 전체 크기
+ * @param divisions 그리드 칸 수
+ * @returns Three.js GridHelper 객체
+ */
+export function createGrid(size: number, divisions: number): THREE.GridHelper {
+  const gridHelper = new THREE.GridHelper(size, divisions);
+  gridHelper.position.y = CONSTANTS.GROUND_POSITION.Y + 0.01; // 지면보다 살짝 위에 위치
+  gridHelper.material.opacity = 0.25;
+  gridHelper.material.transparent = true;
+  return gridHelper;
+}
