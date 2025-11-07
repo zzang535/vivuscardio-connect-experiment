@@ -157,9 +157,17 @@ export default function ShowroomScene() {
 
       const objectsData = JSON.parse(savedData);
       console.log('Parsed objects data:', objectsData);
+
+      // 이전 버전 데이터 호환성 처리 (geometry, color 정보가 없는 경우)
+      const normalizedObjectsData = objectsData.map((data: any) => ({
+        ...data,
+        color: data.color || 0xcccccc, // 기본 회색
+        geometry: data.geometry || { width: 2, height: 2, depth: 10 }, // 테이블 크기 기본값
+      }));
+
       const loadedObjects: THREE.Mesh[] = [];
 
-      objectsData.forEach((data: any) => {
+      normalizedObjectsData.forEach((data: any) => {
         // 박스 오브젝트 재생성 - 저장된 크기와 색상 사용
         const geometry = new THREE.BoxGeometry(
           data.geometry?.width || 2,
@@ -395,7 +403,12 @@ export default function ShowroomScene() {
 
         // userAddedObjects에서만 감지 (recursive=true로 자식까지 검색)
         const intersects = raycaster.intersectObjects(userAddedObjectsRef.current, true);
-        console.log('intersects 개수:', intersects.length);
+        console.log('intersects from userAddedObjects:', intersects.length);
+
+        // 디버깅: scene 전체에서 검색해보기
+        const allIntersects = raycaster.intersectObjects(scene.children, true);
+        console.log('intersects from scene.children:', allIntersects.length);
+        console.log('allIntersects:', allIntersects.map(i => ({ object: i.object.uuid, position: i.object.position })));
         if (intersects.length > 0) {
           console.log('첫 번째 intersect:', intersects[0]);
         }
