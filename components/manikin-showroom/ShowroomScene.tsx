@@ -101,6 +101,11 @@ export default function ShowroomScene() {
       sceneRef.current.remove(objectToPlace);
     }
 
+    // 배치 인디케이터 숨김
+    if (placementIndicatorRef.current) {
+      placementIndicatorRef.current.visible = false;
+    }
+
     // 상태 초기화
     setObjectToPlace(null);
     setEditingObject(null);
