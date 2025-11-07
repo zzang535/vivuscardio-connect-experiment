@@ -833,74 +833,92 @@ export default function ShowroomScene() {
       ) {
         raycaster.setFromCamera(mouseRef.current, cameraRef.current);
 
-        // 광선 투사 대상: 지면 + 사용자가 추가한 객체들
         const objectsToIntersect = [ground, ...userAddedObjectsRef.current];
         const intersects = raycaster.intersectObjects(objectsToIntersect, false);
 
-        let isIntersecting = false;
+        // Find the first valid surface to place on (ground or top face of an object)
+        const validIntersect = intersects.find(
+          i => i.object === ground || (i.face && i.face.normal.y > 0.99)
+        );
 
-        if (intersects.length > 0) {
-          const intersect = intersects[0];
-          const { point, object, face } = intersect;
-
-          // 윗면 또는 지면을 클릭했는지 확인
-          const isTopFace = face && face.normal.y > 0.99;
+        if (validIntersect) {
+          const { point, object } = validIntersect;
+          const ghostObject = objectToPlaceRef.current;
+          const objectHeight = (ghostObject.geometry as THREE.BoxGeometry).parameters.height;
           const isGround = object === ground;
 
-          if (isTopFace || isGround) {
-            isIntersecting = true;
-            const ghostObject = objectToPlaceRef.current;
-            const objectHeight = (ghostObject.geometry as THREE.BoxGeometry).parameters.height;
-            const gridSize = 1;
+          // Calculate potential position
+          const snappedPoint = snapToGrid(point, 1);
+          const newY = isGround
+            ? CONSTANTS.GROUND_POSITION.Y + objectHeight / 2
+            : object.position.y +
+              (object.geometry as THREE.BoxGeometry).parameters.height / 2 +
+              objectHeight / 2;
+          ghostObject.position.set(snappedPoint.x, newY, snappedPoint.z);
 
-            // 스냅된 위치 계산
-            const snappedPoint = snapToGrid(point, gridSize);
+          // Check for collision at this potential position
+          const hasCollision = checkCollision(ghostObject, userAddedObjectsRef.current);
+          const isPlacementCurrentlyValid = !hasCollision;
+          setIsPlacementValid(isPlacementCurrentlyValid);
 
-            // Y 위치 계산 (지면 또는 다른 객체 위)
-            const newY = isGround
-              ? CONSTANTS.GROUND_POSITION.Y + objectHeight / 2
-              : object.position.y + (object.geometry as THREE.BoxGeometry).parameters.height / 2 + objectHeight / 2;
+          // Update indicator
+          placementIndicatorRef.current.visible = true; // Always show indicator on valid surface
+          placementIndicatorRef.current.position.set(
+            snappedPoint.x,
+            isGround
+              ? CONSTANTS.GROUND_POSITION.Y + 0.02
+              : object.position.y +
+                (object.geometry as THREE.BoxGeometry).parameters.height / 2 +
+                0.01,
+            snappedPoint.z
+          );
 
-            ghostObject.position.set(snappedPoint.x, newY, snappedPoint.z);
-
-            // 충돌 검사
-            const hasCollision = checkCollision(ghostObject, userAddedObjectsRef.current);
-            setIsPlacementValid(!hasCollision);
-
-            // 인디케이터 위치 및 가시성 업데이트
-            placementIndicatorRef.current.position.set(
-              snappedPoint.x,
-              isGround ? CONSTANTS.GROUND_POSITION.Y + 0.02 : object.position.y + (object.geometry as THREE.BoxGeometry).parameters.height / 2 + 0.01,
-              snappedPoint.z
-            );
-            placementIndicatorRef.current.visible = true;
-          }
-        }
-
-        if (!isIntersecting) {
-          // 어떤 유효한 면에도 교차하지 않으면 배치 불가능
+          // Update color based on collision status
+          const newColor = isPlacementCurrentlyValid ? 0xffffff : 0xff0000;
+          const materials = ghostObject.material as THREE.MeshStandardMaterial[];
+          materials.forEach(material => {
+            if (material.color.getHex() !== 0x4a9eff) {
+              material.color.setHex(newColor);
+            }
+          });
+        } else {
+          // No valid surface under cursor. Hide everything and mark as invalid.
           setIsPlacementValid(false);
           if (placementIndicatorRef.current) {
             placementIndicatorRef.current.visible = false;
           }
-          // 고스트 객체를 멀리 보냄
           if (objectToPlaceRef.current) {
             objectToPlaceRef.current.position.y = -1000;
           }
         }
-
-        // 배치 가능 여부에 따라 고스트 객체 색상 변경
-        const ghostObject = objectToPlaceRef.current;
-        const newColor = isPlacementValidRef.current ? 0xffffff : 0xff0000; // 유효: 흰색, 무효: 빨간색
-        const materials = ghostObject.material as THREE.MeshStandardMaterial[];
-        materials.forEach(material => {
-          // 바닥면(하늘색)은 색상 변경에서 제외
-          if (material.color.getHex() !== 0x4a9eff) {
-            material.color.setHex(newColor);
-          }
-        });
       } else if (placementIndicatorRef.current) {
         placementIndicatorRef.current.visible = false;
+      }
+
+      // --- 마우스 커서 변경 로직 ---
+      if (rendererRef.current && cameraRef.current) {
+        // 1. 편집 모드 (기존 객체 이동)일 때: 'grabbing'
+        if (isPlacementModeRef.current && editingObjectRef.current) {
+          rendererRef.current.domElement.style.cursor = 'grabbing';
+        }
+        // 2. 배치 모드 (신규 객체 추가)일 때: 'crosshair'
+        else if (isPlacementModeRef.current) {
+          rendererRef.current.domElement.style.cursor = 'crosshair';
+        }
+        // 3. 일반 모드일 때
+        else {
+          raycaster.setFromCamera(mouseRef.current, cameraRef.current);
+          const intersects = raycaster.intersectObjects(userAddedObjectsRef.current, false);
+
+          // 3.1. 잡을 수 있는 객체 위에 마우스가 있을 때: 'grab'
+          if (intersects.length > 0) {
+            rendererRef.current.domElement.style.cursor = 'grab';
+          }
+          // 3.2. 그 외 (배경 등): 'auto' (기본 커서)
+          else {
+            rendererRef.current.domElement.style.cursor = 'auto';
+          }
+        }
       }
 
 
@@ -937,6 +955,7 @@ export default function ShowroomScene() {
         renderer.domElement &&
         container.contains(renderer.domElement)
       ) {
+        renderer.domElement.style.cursor = 'auto'; // 커서 스타일 초기화
         container.removeChild(renderer.domElement);
         console.log("Canvas removed from container");
       }
