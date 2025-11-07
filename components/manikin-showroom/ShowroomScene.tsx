@@ -16,6 +16,13 @@ import {
   loadAEDModelOnTable,
   createLogoBanner,
 } from "@/lib/manikin-showroom/objects";
+import {
+  type AutoMoveState,
+  createAutoMoveState,
+  startAutoMove,
+  updateAutoMove,
+  completeAutoMove,
+} from "@/lib/manikin-showroom/cameraAnimation";
 
 export default function ShowroomScene() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -23,7 +30,7 @@ export default function ShowroomScene() {
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
-  
+
   // 모든 객체 로딩 상태 추적
   const loadingStateRef = useRef({
     manikins: false,
@@ -31,6 +38,10 @@ export default function ShowroomScene() {
     logoBanner: false,
   });
   const [isLoading, setIsLoading] = useState(true);
+
+  // 자동 카메라 무빙 상태 추적
+  const [isAutoMoving, setIsAutoMoving] = useState(false);
+  const autoMoveRef = useRef<AutoMoveState>(createAutoMoveState());
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -43,7 +54,12 @@ export default function ShowroomScene() {
     }
 
     console.log("=== Three.js Scene Initialization ===");
-    console.log("Container dimensions:", container.clientWidth, "x", container.clientHeight);
+    console.log(
+      "Container dimensions:",
+      container.clientWidth,
+      "x",
+      container.clientHeight
+    );
 
     // Scene 설정
     const scene = new THREE.Scene();
@@ -69,29 +85,34 @@ export default function ShowroomScene() {
       CONSTANTS.INITIAL_CAMERA_TARGET.Z
     );
     cameraRef.current = camera;
-    console.log("Camera created at position:", camera.position.x, camera.position.y, camera.position.z);
+    console.log(
+      "Camera created at position:",
+      camera.position.x,
+      camera.position.y,
+      camera.position.z
+    );
 
     // Renderer 설정
     const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(
-      container.clientWidth,
-      container.clientHeight
-    );
+    renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     // 캔버스 스타일 설정 (중요!)
-    renderer.domElement.style.display = 'block';
-    renderer.domElement.style.width = '100%';
-    renderer.domElement.style.height = '100%';
-    renderer.domElement.style.touchAction = 'none';
+    renderer.domElement.style.display = "block";
+    renderer.domElement.style.width = "100%";
+    renderer.domElement.style.height = "100%";
+    renderer.domElement.style.touchAction = "none";
 
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
     console.log("Renderer created and added to DOM");
     console.log("Canvas element:", renderer.domElement);
-    console.log("Canvas in container:", container.contains(renderer.domElement));
+    console.log(
+      "Canvas in container:",
+      container.contains(renderer.domElement)
+    );
 
     // OrbitControls 설정
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -120,7 +141,7 @@ export default function ShowroomScene() {
     // 터치 제스처 설정 (모바일)
     controls.touches = {
       ONE: THREE.TOUCH.ROTATE,
-      TWO: THREE.TOUCH.DOLLY_PAN
+      TWO: THREE.TOUCH.DOLLY_PAN,
     };
 
     // 패닝 제한: 지면 아래로 이동하지 못하도록 제한
@@ -131,7 +152,7 @@ export default function ShowroomScene() {
         controls.update();
       }
     };
-    controls.addEventListener('change', handlePanLimit);
+    controls.addEventListener("change", handlePanLimit);
 
     controlsRef.current = controls;
     controls.update();
@@ -167,33 +188,50 @@ export default function ShowroomScene() {
     };
 
     // 이벤트 리스너 등록
-    renderer.domElement.addEventListener('wheel', handleWheel, { passive: false });
-    renderer.domElement.addEventListener('mousedown', handleMouseDown);
-    renderer.domElement.addEventListener('mousemove', handleMouseMove);
-    renderer.domElement.addEventListener('contextmenu', handleContextMenu);
-    renderer.domElement.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+    renderer.domElement.addEventListener("wheel", handleWheel, {
+      passive: false,
+    });
+    renderer.domElement.addEventListener("mousedown", handleMouseDown);
+    renderer.domElement.addEventListener("mousemove", handleMouseMove);
+    renderer.domElement.addEventListener("contextmenu", handleContextMenu);
+    renderer.domElement.addEventListener(
+      "touchmove",
+      (e) => e.preventDefault(),
+      { passive: false }
+    );
 
     console.log("Event listeners attached to canvas");
-    console.log("Canvas size:", renderer.domElement.width, "x", renderer.domElement.height);
-    console.log("Canvas position in DOM:", renderer.domElement.getBoundingClientRect());
+    console.log(
+      "Canvas size:",
+      renderer.domElement.width,
+      "x",
+      renderer.domElement.height
+    );
+    console.log(
+      "Canvas position in DOM:",
+      renderer.domElement.getBoundingClientRect()
+    );
 
     // 캔버스 클릭 테스트
     setTimeout(() => {
       console.log("=== Testing canvas interaction after 1 second ===");
       console.log("Canvas parent:", renderer.domElement.parentElement);
-      console.log("Canvas is visible:", renderer.domElement.offsetParent !== null);
+      console.log(
+        "Canvas is visible:",
+        renderer.domElement.offsetParent !== null
+      );
       console.log("Controls exists:", controlsRef.current !== null);
       console.log("Controls enabled:", {
         zoom: controlsRef.current?.enableZoom,
         rotate: controlsRef.current?.enableRotate,
-        pan: controlsRef.current?.enablePan
+        pan: controlsRef.current?.enablePan,
       });
 
       // 수동으로 이벤트 테스트
-      const testClick = new MouseEvent('mousedown', {
+      const testClick = new MouseEvent("mousedown", {
         clientX: 100,
         clientY: 100,
-        button: 0
+        button: 0,
       });
       console.log("Dispatching test mousedown event...");
       renderer.domElement.dispatchEvent(testClick);
@@ -213,10 +251,10 @@ export default function ShowroomScene() {
       aedModel: false,
       logoBanner: false,
     };
-    
+
     // 로딩 상태 설정
     setIsLoading(true);
-    
+
     // 모든 객체 로딩 완료 확인 함수
     const checkAllLoaded = () => {
       const { manikins, aedModel, logoBanner } = loadingStateRef.current;
@@ -242,9 +280,18 @@ export default function ShowroomScene() {
     }); // 크기: 15 x 8, Y 위치는 함수 내부에서 지면 기준으로 계산
 
     // 첫 번째 테이블 생성 (가로 방향, 길이 13)
-    const table1 = createTable(table1Width, CONSTANTS.TABLE_SIZE.HEIGHT, CONSTANTS.TABLE_SIZE.DEPTH);
+    const table1 = createTable(
+      table1Width,
+      CONSTANTS.TABLE_SIZE.HEIGHT,
+      CONSTANTS.TABLE_SIZE.DEPTH
+    );
     scene.add(table1);
-    console.log("Table 1 created at Y:", CONSTANTS.TABLE_POSITION.Y, "width:", table1Width);
+    console.log(
+      "Table 1 created at Y:",
+      CONSTANTS.TABLE_POSITION.Y,
+      "width:",
+      table1Width
+    );
 
     // 두 번째 테이블 생성 (세로 방향, L자 형태로 배치, 길이는 반으로)
     const table2Width = table1Width / 2; // 첫 번째 테이블 길이의 반
@@ -259,7 +306,7 @@ export default function ShowroomScene() {
     const table1HalfWidth = table1Width / 2; // 첫 번째 테이블의 반 너비
     const table2RotatedWidth = CONSTANTS.TABLE_SIZE.DEPTH / 2; // 회전 후 두 번째 테이블의 반 너비 (0.75)
     const table2RotatedDepth = table2Width / 2; // 회전 후 두 번째 테이블의 반 깊이
-    
+
     // 두 번째 테이블의 중심 위치 계산
     // X: 첫 번째 테이블의 오른쪽 끝 - 두 번째 테이블의 반 너비 (겹치도록)
     // Z: 첫 번째 테이블의 앞쪽으로 배치하여 L자 형태 만듦
@@ -270,15 +317,21 @@ export default function ShowroomScene() {
     );
     // 두 번째 테이블을 90도 회전시켜 세로 방향으로 만듦
     table2.rotation.y = Math.PI / 2; // 90도 회전 (Y축 기준)
-    
+
     // AED-T 테이블 색상을 빨간색(약간 죽인 톤)으로 변경
     // 원본 #CC0000에서 약간 채도와 밝기를 낮춘 #B01A1A
     if (table2.material instanceof THREE.MeshStandardMaterial) {
-      table2.material.color.setHex(0xB01A1A);
+      table2.material.color.setHex(0xb01a1a);
     }
-    
+
     scene.add(table2);
-    console.log("Table 2 created (half width) at X:", table1HalfWidth + table2RotatedWidth, "Z:", table2RotatedDepth - CONSTANTS.TABLE_SIZE.DEPTH / 2, "rotation: 90deg, color: red (#B01A1A)");
+    console.log(
+      "Table 2 created (half width) at X:",
+      table1HalfWidth + table2RotatedWidth,
+      "Z:",
+      table2RotatedDepth - CONSTANTS.TABLE_SIZE.DEPTH / 2,
+      "rotation: 90deg, color: red (#B01A1A)"
+    );
 
     // OBJ 모델 로드 (마네킹 5개)
     const loader = new OBJLoader();
@@ -290,14 +343,14 @@ export default function ShowroomScene() {
       CONSTANTS.MODEL_PATH,
       (object) => {
         console.log("=== OBJ file loaded successfully ===");
-        
+
         // 마네킹을 5개 복제
         const manikins: THREE.Object3D[] = [];
         const MANIKIN_COUNT = 5;
 
         for (let i = 0; i < MANIKIN_COUNT; i++) {
           const manikin = object.clone();
-          
+
           // 재질 및 그림자 설정
           let meshCount = 0;
           manikin.traverse((node) => {
@@ -316,31 +369,48 @@ export default function ShowroomScene() {
         console.log(`Created ${MANIKIN_COUNT} manikins`);
 
         // 마네킹들을 테이블 위에 일정 간격으로 배치
-        const { centerY, positions } = positionMultipleManikinsOnTable(manikins);
+        const { centerY, positions } =
+          positionMultipleManikinsOnTable(manikins);
 
         // 각 마네킹 앞에 포스터 생성 및 배치
         positions.forEach((xPosition, index) => {
           const manikinInfo = CONSTANTS.MANIKIN_INFO[index];
           if (manikinInfo) {
-            const poster = createPoster(manikinInfo.name, manikinInfo.description, xPosition);
+            const poster = createPoster(
+              manikinInfo.name,
+              manikinInfo.description,
+              xPosition
+            );
             scene.add(poster);
-            console.log(`Created poster for ${manikinInfo.name} at X: ${xPosition.toFixed(2)}`);
+            console.log(
+              `Created poster for ${manikinInfo.name} at X: ${xPosition.toFixed(
+                2
+              )}`
+            );
           }
         });
 
         // 모든 마네킹을 포함하는 전체 크기 계산
-        const boxes = manikins.map(manikin => new THREE.Box3().setFromObject(manikin));
+        const boxes = manikins.map((manikin) =>
+          new THREE.Box3().setFromObject(manikin)
+        );
         const overallBox = boxes.reduce((acc, box) => acc.union(box), boxes[0]);
         const overallSize = overallBox.getSize(new THREE.Vector3());
 
-        console.log("Overall scene size:", overallSize.x.toFixed(2), overallSize.y.toFixed(2), overallSize.z.toFixed(2));
+        console.log(
+          "Overall scene size:",
+          overallSize.x.toFixed(2),
+          overallSize.y.toFixed(2),
+          overallSize.z.toFixed(2)
+        );
 
         // 카메라 자동 조정 (전체 씬을 고려)
         // IM17-P 마네킹(인덱스 3)의 위치를 카메라 타겟으로 설정
         const IM17_P_INDEX = 3; // IM17-P는 MANIKIN_INFO 배열의 인덱스 3
-        const im17pX = positions.length > IM17_P_INDEX ? positions[IM17_P_INDEX] : 0;
+        const im17pX =
+          positions.length > IM17_P_INDEX ? positions[IM17_P_INDEX] : 0;
         const im17pZ = 0; // 마네킹은 테이블 중앙(Z=0)에 배치됨
-        
+
         autoAdjustCamera({
           camera,
           controls,
@@ -358,8 +428,10 @@ export default function ShowroomScene() {
         const table2RotatedWidthCalc = CONSTANTS.TABLE_SIZE.DEPTH / 2;
         const table2RotatedDepthCalc = table2WidthCalc / 2;
         const table2PositionX = table1HalfWidthCalc + table2RotatedWidthCalc;
-        const table2PositionZ = table2RotatedDepthCalc - CONSTANTS.TABLE_SIZE.DEPTH / 2;
-        const table2TopY = CONSTANTS.TABLE_POSITION.Y + CONSTANTS.TABLE_SIZE.HEIGHT / 2;
+        const table2PositionZ =
+          table2RotatedDepthCalc - CONSTANTS.TABLE_SIZE.DEPTH / 2;
+        const table2TopY =
+          CONSTANTS.TABLE_POSITION.Y + CONSTANTS.TABLE_SIZE.HEIGHT / 2;
 
         // 마네킹 로드 완료
         loadingStateRef.current.manikins = true;
@@ -372,7 +444,7 @@ export default function ShowroomScene() {
           table2PositionX,
           table2PositionZ + 1,
           table2TopY,
-          Math.PI / 2 * 3,
+          (Math.PI / 2) * 3,
           (modelPositionX) => {
             // AED-T 앞에 포스터 생성 (두 번째 테이블의 회전 각도 고려)
             const aedPoster = createPoster(
@@ -383,8 +455,14 @@ export default function ShowroomScene() {
               table2PositionZ + 1 // 테이블 Z 위치 전달
             );
             scene.add(aedPoster);
-            console.log(`Created poster for AED-T at X: ${modelPositionX.toFixed(2)}, Z: ${(table2PositionZ + 1).toFixed(2)}, rotation: ${table2RotationY.toFixed(2)}`);
-            
+            console.log(
+              `Created poster for AED-T at X: ${modelPositionX.toFixed(
+                2
+              )}, Z: ${(table2PositionZ + 1).toFixed(
+                2
+              )}, rotation: ${table2RotationY.toFixed(2)}`
+            );
+
             // AED-T 모델 로드 완료
             loadingStateRef.current.aedModel = true;
             checkAllLoaded();
@@ -394,7 +472,9 @@ export default function ShowroomScene() {
       (progress) => {
         if (progress.total > 0) {
           const percent = ((progress.loaded / progress.total) * 100).toFixed(0);
-          console.log(`Loading progress: ${percent}% (${progress.loaded}/${progress.total} bytes)`);
+          console.log(
+            `Loading progress: ${percent}% (${progress.loaded}/${progress.total} bytes)`
+          );
         }
       },
       (error) => {
@@ -408,6 +488,26 @@ export default function ShowroomScene() {
     // 애니메이션 루프
     const animate = () => {
       requestAnimationFrame(animate);
+
+      // 자동 무빙 업데이트
+      if (cameraRef.current && controlsRef.current) {
+        const isCompleted = updateAutoMove(
+          autoMoveRef.current,
+          cameraRef.current,
+          controlsRef.current
+        );
+
+        // 무빙 완료 시 처리
+        if (isCompleted && autoMoveRef.current.isActive) {
+          completeAutoMove(
+            autoMoveRef.current,
+            cameraRef.current,
+            controlsRef.current
+          );
+          setIsAutoMoving(false);
+        }
+      }
+
       controls.update();
       renderer.render(scene, camera);
     };
@@ -432,18 +532,22 @@ export default function ShowroomScene() {
       console.log("=== Cleaning up Three.js scene ===");
       window.removeEventListener("resize", handleResize);
 
-      renderer.domElement.removeEventListener('wheel', handleWheel);
-      renderer.domElement.removeEventListener('mousedown', handleMouseDown);
-      renderer.domElement.removeEventListener('mousemove', handleMouseMove);
-      renderer.domElement.removeEventListener('contextmenu', handleContextMenu);
+      renderer.domElement.removeEventListener("wheel", handleWheel);
+      renderer.domElement.removeEventListener("mousedown", handleMouseDown);
+      renderer.domElement.removeEventListener("mousemove", handleMouseMove);
+      renderer.domElement.removeEventListener("contextmenu", handleContextMenu);
 
-      if (container && renderer.domElement && container.contains(renderer.domElement)) {
+      if (
+        container &&
+        renderer.domElement &&
+        container.contains(renderer.domElement)
+      ) {
         container.removeChild(renderer.domElement);
         console.log("Canvas removed from container");
       }
 
       // 패닝 제한 이벤트 리스너 제거
-      controls.removeEventListener('change', handlePanLimit);
+      controls.removeEventListener("change", handlePanLimit);
       controls.dispose();
       renderer.dispose();
 
@@ -467,95 +571,306 @@ export default function ShowroomScene() {
         ref={containerRef}
         className="w-screen h-screen"
         style={{
-          position: 'fixed',
+          position: "fixed",
           top: 0,
           left: 0,
-          width: '100vw',
-          height: '100vh',
-          overflow: 'hidden'
+          width: "100vw",
+          height: "100vh",
+          overflow: "hidden",
         }}
       />
-      
+
       {/* 마우스 컨트롤 안내 박스 */}
       {!isLoading && (
         <div
           style={{
-            position: 'fixed',
-            top: '20px',
-            left: '20px',
-            backgroundColor: 'rgba(0, 0, 0, 0.75)',
-            color: '#ffffff',
-            padding: '16px 20px',
-            borderRadius: '10px',
-            fontSize: '14px',
-            lineHeight: '1.6',
+            position: "fixed",
+            top: "20px",
+            left: "20px",
+            backgroundColor: "rgba(0, 0, 0, 0.75)",
+            color: "#ffffff",
+            padding: "16px 20px",
+            borderRadius: "10px",
+            fontSize: "14px",
+            lineHeight: "1.6",
             zIndex: 1000,
-            backdropFilter: 'blur(6px)',
-            border: '1px solid rgba(255, 255, 255, 0.15)',
-            boxShadow: '0 6px 16px rgba(0, 0, 0, 0.4)',
-            minWidth: '200px',
+            backdropFilter: "blur(6px)",
+            border: "1px solid rgba(255, 255, 255, 0.15)",
+            boxShadow: "0 6px 16px rgba(0, 0, 0, 0.4)",
+            minWidth: "200px",
           }}
         >
-          <div style={{ fontWeight: '700', marginBottom: '12px', fontSize: '16px', letterSpacing: '0.3px' }}>
+          <div
+            style={{
+              fontWeight: "700",
+              marginBottom: "12px",
+              fontSize: "16px",
+              letterSpacing: "0.3px",
+            }}
+          >
             마우스 컨트롤
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "14px" }}
+          >
             {/* 드래그 */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
               {/* 왼쪽: 마우스 좌클릭 */}
-              <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="10" y="6" width="20" height="28" rx="10" fill="#E8E8E8" stroke="#555" strokeWidth="2"/>
-                <path d="M20 6C14.477 6 10 10.477 10 16V18H20V6Z" fill="#4A9EFF"/>
-                <line x1="20" y1="6" x2="20" y2="18" stroke="#555" strokeWidth="2"/>
+              <svg
+                width="40"
+                height="40"
+                viewBox="0 0 40 40"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <rect
+                  x="10"
+                  y="6"
+                  width="20"
+                  height="28"
+                  rx="10"
+                  fill="#E8E8E8"
+                  stroke="#555"
+                  strokeWidth="2"
+                />
+                <path
+                  d="M20 6C14.477 6 10 10.477 10 16V18H20V6Z"
+                  fill="#4A9EFF"
+                />
+                <line
+                  x1="20"
+                  y1="6"
+                  x2="20"
+                  y2="18"
+                  stroke="#555"
+                  strokeWidth="2"
+                />
               </svg>
 
               {/* 중앙: + 기호 */}
-              <div style={{ fontSize: '20px', fontWeight: '700', color: '#999', lineHeight: '1' }}>+</div>
+              <div
+                style={{
+                  fontSize: "20px",
+                  fontWeight: "700",
+                  color: "#999",
+                  lineHeight: "1",
+                }}
+              >
+                +
+              </div>
 
               {/* 오른쪽: 회전 화살표 */}
-              <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M30 20C30 25 27 28 23 29.5" stroke="#4A9EFF" strokeWidth="2.5" strokeLinecap="round"/>
-                <path d="M20 27L23 29.5L25 26" fill="#4A9EFF"/>
-                <path d="M10 20C10 15 13 12 17 10.5" stroke="#4A9EFF" strokeWidth="2.5" strokeLinecap="round"/>
-                <path d="M20 13L17 10.5L15 14" fill="#4A9EFF"/>
-                <circle cx="20" cy="20" r="3" fill="none" stroke="#4A9EFF" strokeWidth="1.5" strokeDasharray="2 2"/>
+              <svg
+                width="40"
+                height="40"
+                viewBox="0 0 40 40"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M30 20C30 25 27 28 23 29.5"
+                  stroke="#4A9EFF"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                />
+                <path d="M20 27L23 29.5L25 26" fill="#4A9EFF" />
+                <path
+                  d="M10 20C10 15 13 12 17 10.5"
+                  stroke="#4A9EFF"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                />
+                <path d="M20 13L17 10.5L15 14" fill="#4A9EFF" />
+                <circle
+                  cx="20"
+                  cy="20"
+                  r="3"
+                  fill="none"
+                  stroke="#4A9EFF"
+                  strokeWidth="1.5"
+                  strokeDasharray="2 2"
+                />
               </svg>
 
-              <div style={{ marginLeft: '4px' }}>
-                <div style={{ fontWeight: '600', marginBottom: '2px' }}>드래그</div>
-                <div style={{ fontSize: '12px', opacity: 0.85 }}>화면 회전</div>
+              <div style={{ marginLeft: "4px" }}>
+                <div style={{ fontWeight: "600", marginBottom: "2px" }}>
+                  드래그
+                </div>
+                <div style={{ fontSize: "12px", opacity: 0.85 }}>화면 회전</div>
               </div>
             </div>
 
             {/* 스크롤 */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
               {/* 왼쪽: 마우스 휠 */}
-              <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="10" y="6" width="20" height="28" rx="10" fill="#E8E8E8" stroke="#555" strokeWidth="2"/>
-                <line x1="20" y1="6" x2="20" y2="18" stroke="#555" strokeWidth="2"/>
+              <svg
+                width="40"
+                height="40"
+                viewBox="0 0 40 40"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <rect
+                  x="10"
+                  y="6"
+                  width="20"
+                  height="28"
+                  rx="10"
+                  fill="#E8E8E8"
+                  stroke="#555"
+                  strokeWidth="2"
+                />
+                <line
+                  x1="20"
+                  y1="6"
+                  x2="20"
+                  y2="18"
+                  stroke="#555"
+                  strokeWidth="2"
+                />
                 {/* 중앙 휠 영역 파란색 */}
-                <rect x="17" y="10" width="6" height="12" rx="3" fill="#4A9EFF"/>
+                <rect
+                  x="17"
+                  y="10"
+                  width="6"
+                  height="12"
+                  rx="3"
+                  fill="#4A9EFF"
+                />
                 {/* 휠 상하 화살표 */}
-                <path d="M19 13L20 11L21 13" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M21 17L20 19L19 17" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path
+                  d="M19 13L20 11L21 13"
+                  stroke="white"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M21 17L20 19L19 17"
+                  stroke="white"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
 
               {/* 중앙: = 기호 */}
-              <div style={{ fontSize: '20px', fontWeight: '700', color: '#999', lineHeight: '1' }}>=</div>
+              <div
+                style={{
+                  fontSize: "20px",
+                  fontWeight: "700",
+                  color: "#999",
+                  lineHeight: "1",
+                }}
+              >
+                =
+              </div>
 
               {/* 오른쪽: 확대/축소 */}
-              <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="20" cy="20" r="12" stroke="#4A9EFF" strokeWidth="2.5" fill="none"/>
-                <line x1="14" y1="20" x2="26" y2="20" stroke="#4A9EFF" strokeWidth="2.5" strokeLinecap="round"/>
-                <line x1="20" y1="14" x2="20" y2="26" stroke="#4A9EFF" strokeWidth="2.5" strokeLinecap="round"/>
-                <path d="M28 28L33 33" stroke="#4A9EFF" strokeWidth="2.5" strokeLinecap="round"/>
+              <svg
+                width="40"
+                height="40"
+                viewBox="0 0 40 40"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <circle
+                  cx="20"
+                  cy="20"
+                  r="12"
+                  stroke="#4A9EFF"
+                  strokeWidth="2.5"
+                  fill="none"
+                />
+                <line
+                  x1="14"
+                  y1="20"
+                  x2="26"
+                  y2="20"
+                  stroke="#4A9EFF"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                />
+                <line
+                  x1="20"
+                  y1="14"
+                  x2="20"
+                  y2="26"
+                  stroke="#4A9EFF"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M28 28L33 33"
+                  stroke="#4A9EFF"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                />
               </svg>
 
-              <div style={{ marginLeft: '4px' }}>
-                <div style={{ fontWeight: '600', marginBottom: '2px' }}>스크롤</div>
-                <div style={{ fontSize: '12px', opacity: 0.85 }}>확대/축소</div>
+              <div style={{ marginLeft: "4px" }}>
+                <div style={{ fontWeight: "600", marginBottom: "2px" }}>
+                  스크롤
+                </div>
+                <div style={{ fontSize: "12px", opacity: 0.85 }}>확대/축소</div>
               </div>
             </div>
+
+            {/* 재생 버튼 */}
+            <button
+              onClick={() => {
+                if (cameraRef.current && controlsRef.current) {
+                  startAutoMove(
+                    autoMoveRef.current,
+                    cameraRef.current,
+                    controlsRef.current
+                  );
+                  setIsAutoMoving(true);
+                }
+              }}
+              disabled={isAutoMoving}
+              style={{
+                marginTop: "8px",
+                width: "100%",
+                padding: "10px",
+                backgroundColor: isAutoMoving ? "#666" : "#4A9EFF",
+                color: "#ffffff",
+                border: "none",
+                borderRadius: "6px",
+                fontSize: "13px",
+                fontWeight: "600",
+                cursor: isAutoMoving ? "not-allowed" : "pointer",
+                transition: "all 0.2s ease",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+              }}
+              onMouseEnter={(e) => {
+                if (!isAutoMoving) {
+                  e.currentTarget.style.backgroundColor = "#3A8EEF";
+                  e.currentTarget.style.boxShadow =
+                    "0 2px 8px rgba(74, 158, 255, 0.4)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isAutoMoving) {
+                  e.currentTarget.style.backgroundColor = "#4A9EFF";
+                  e.currentTarget.style.boxShadow = "none";
+                }
+              }}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="currentColor"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d="M3 1.5v13l10-6.5L3 1.5z" fill="currentColor" />
+              </svg>
+              {isAutoMoving ? "무빙 중..." : "360° 둘러보기"}
+            </button>
           </div>
         </div>
       )}
@@ -564,39 +879,39 @@ export default function ShowroomScene() {
       {isLoading && (
         <div
           style={{
-            position: 'fixed',
+            position: "fixed",
             top: 0,
             left: 0,
-            width: '100vw',
-            height: '100vh',
-            backgroundColor: 'rgba(42, 42, 42, 0.9)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
+            width: "100vw",
+            height: "100vh",
+            backgroundColor: "rgba(42, 42, 42, 0.9)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
             zIndex: 9999,
-            color: '#ffffff',
+            color: "#ffffff",
           }}
         >
           {/* 로딩 스피너 */}
           <div
             style={{
-              width: '50px',
-              height: '50px',
-              border: '4px solid rgba(255, 255, 255, 0.3)',
-              borderTop: '4px solid #ffffff',
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite',
-              marginBottom: '20px',
+              width: "50px",
+              height: "50px",
+              border: "4px solid rgba(255, 255, 255, 0.3)",
+              borderTop: "4px solid #ffffff",
+              borderRadius: "50%",
+              animation: "spin 1s linear infinite",
+              marginBottom: "20px",
             }}
           />
 
           {/* 로딩 텍스트 */}
           <div
             style={{
-              fontSize: '18px',
-              fontWeight: '500',
-              letterSpacing: '0.5px',
+              fontSize: "18px",
+              fontWeight: "500",
+              letterSpacing: "0.5px",
             }}
           >
             Loading 3D Models...
@@ -605,8 +920,12 @@ export default function ShowroomScene() {
           {/* CSS 애니메이션 */}
           <style jsx>{`
             @keyframes spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
+              0% {
+                transform: rotate(0deg);
+              }
+              100% {
+                transform: rotate(360deg);
+              }
             }
           `}</style>
         </div>
