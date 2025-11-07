@@ -842,6 +842,8 @@ export default function ShowroomScene() {
         );
 
         if (validIntersect) {
+          if (!(validIntersect.object instanceof THREE.Mesh)) return;
+
           const { point, object } = validIntersect;
           const ghostObject = objectToPlaceRef.current;
           const objectHeight = (ghostObject.geometry as THREE.BoxGeometry).parameters.height;
