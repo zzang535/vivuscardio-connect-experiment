@@ -127,13 +127,22 @@ export default function ShowroomScene() {
   // 오브젝트 저장/로딩 함수들
   const saveObjectsToStorage = (objects: THREE.Mesh[]) => {
     try {
-      const objectsData = objects.map(obj => ({
-        id: obj.uuid,
-        type: 'box', // 현재는 박스만 지원
-        position: obj.position.toArray(),
-        rotation: obj.rotation.toArray(),
-        scale: obj.scale.toArray(),
-      }));
+      const objectsData = objects.map(obj => {
+        const material = obj.material as THREE.MeshStandardMaterial;
+        return {
+          id: obj.uuid,
+          type: 'box', // 현재는 박스만 지원
+          position: obj.position.toArray(),
+          rotation: obj.rotation.toArray(),
+          scale: obj.scale.toArray(),
+          color: material.color ? material.color.getHex() : 0xcccccc,
+          geometry: {
+            width: (obj.geometry as THREE.BoxGeometry).parameters?.width || 2,
+            height: (obj.geometry as THREE.BoxGeometry).parameters?.height || 2,
+            depth: (obj.geometry as THREE.BoxGeometry).parameters?.depth || 2,
+          },
+        };
+      });
       localStorage.setItem('manikinShowroomObjects', JSON.stringify(objectsData));
     } catch (error) {
       console.error('Failed to save objects:', error);
@@ -149,12 +158,18 @@ export default function ShowroomScene() {
       const loadedObjects: THREE.Mesh[] = [];
 
       objectsData.forEach((data: any) => {
-        // 박스 오브젝트 재생성
-        const geometry = new THREE.BoxGeometry(1, 1, 1);
+        // 박스 오브젝트 재생성 - 저장된 크기와 색상 사용
+        const geometry = new THREE.BoxGeometry(
+          data.geometry?.width || 2,
+          data.geometry?.height || 2,
+          data.geometry?.depth || 2
+        );
         const material = new THREE.MeshStandardMaterial({
-          color: 0x4A9EFF,
-          transparent: true,
-          opacity: 0.8,
+          color: data.color || 0xcccccc, // 저장된 색상 또는 기본 회색
+          roughness: 0.8,
+          metalness: 0.2,
+          transparent: false,
+          opacity: 1,
         });
         const mesh = new THREE.Mesh(geometry, material);
 
