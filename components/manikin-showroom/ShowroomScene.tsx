@@ -152,9 +152,11 @@ export default function ShowroomScene() {
   const loadObjectsFromStorage = (): THREE.Mesh[] => {
     try {
       const savedData = localStorage.getItem('manikinShowroomObjects');
+      console.log('Raw saved data:', savedData);
       if (!savedData || !sceneRef.current) return [];
 
       const objectsData = JSON.parse(savedData);
+      console.log('Parsed objects data:', objectsData);
       const loadedObjects: THREE.Mesh[] = [];
 
       objectsData.forEach((data: any) => {
@@ -182,6 +184,7 @@ export default function ShowroomScene() {
         // 씬에 추가
         if (sceneRef.current) {
           sceneRef.current.add(mesh);
+          console.log('Added mesh to scene:', mesh.uuid, mesh.position);
         }
         loadedObjects.push(mesh);
       });
