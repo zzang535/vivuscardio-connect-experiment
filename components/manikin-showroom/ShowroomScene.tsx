@@ -70,6 +70,9 @@ export default function ShowroomScene() {
   const userAddedObjectsRef = useRef<THREE.Mesh[]>(userAddedObjects);
   userAddedObjectsRef.current = userAddedObjects;
 
+  // 로컬 스토리지에서 초기 객체 로딩을 한 번만 실행하기 위한 플래그
+  const initialObjectsLoadedRef = useRef(false);
+
   // 마우스 위치를 저장할 ref (Vector2 타입 사용)
   const mouseRef = useRef(new THREE.Vector2());
 
@@ -530,8 +533,12 @@ export default function ShowroomScene() {
 
     // 모든 객체 로딩 완료 확인 함수
     const checkAllLoaded = () => {
+      if (initialObjectsLoadedRef.current) return; // 이미 로드되었으면 중복 실행 방지
+
       const { manikins, aedModel, logoBanner } = loadingStateRef.current;
       if (manikins && aedModel && logoBanner) {
+        initialObjectsLoadedRef.current = true; // 로드 실행 플래그 설정
+
         // 모든 객체 로딩 완료 - 다음 프레임에 로딩 화면을 숨기도록 약간의 지연 추가 (부드러운 전환)
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
