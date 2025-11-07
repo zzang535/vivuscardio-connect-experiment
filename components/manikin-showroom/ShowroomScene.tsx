@@ -111,11 +111,72 @@ export default function ShowroomScene() {
     setEditingObject(null);
     setOriginalPosition(null);
     setIsPlacementMode(false);
+
+    // 변경사항 저장
+    setUserAddedObjects(prev => {
+      const updatedObjects = prev.filter(obj => obj !== editingObject);
+      saveObjectsToStorage(updatedObjects);
+      return updatedObjects;
+    });
   };
 
   // 자동 카메라 무빙 상태 추적
   const [isAutoMoving, setIsAutoMoving] = useState(false);
   const autoMoveRef = useRef<AutoMoveState>(createAutoMoveState());
+
+  // 오브젝트 저장/로딩 함수들
+  const saveObjectsToStorage = (objects: THREE.Mesh[]) => {
+    try {
+      const objectsData = objects.map(obj => ({
+        id: obj.uuid,
+        type: 'box', // 현재는 박스만 지원
+        position: obj.position.toArray(),
+        rotation: obj.rotation.toArray(),
+        scale: obj.scale.toArray(),
+      }));
+      localStorage.setItem('manikinShowroomObjects', JSON.stringify(objectsData));
+    } catch (error) {
+      console.error('Failed to save objects:', error);
+    }
+  };
+
+  const loadObjectsFromStorage = (): THREE.Mesh[] => {
+    try {
+      const savedData = localStorage.getItem('manikinShowroomObjects');
+      if (!savedData || !sceneRef.current) return [];
+
+      const objectsData = JSON.parse(savedData);
+      const loadedObjects: THREE.Mesh[] = [];
+
+      objectsData.forEach((data: any) => {
+        // 박스 오브젝트 재생성
+        const geometry = new THREE.BoxGeometry(1, 1, 1);
+        const material = new THREE.MeshStandardMaterial({
+          color: 0x4A9EFF,
+          transparent: true,
+          opacity: 0.8,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+
+        // 저장된 속성 복원
+        mesh.position.fromArray(data.position);
+        mesh.rotation.fromArray(data.rotation);
+        mesh.scale.fromArray(data.scale);
+        mesh.uuid = data.id;
+
+        // 씬에 추가
+        if (sceneRef.current) {
+          sceneRef.current.add(mesh);
+        }
+        loadedObjects.push(mesh);
+      });
+
+      return loadedObjects;
+    } catch (error) {
+      console.error('Failed to load objects:', error);
+      return [];
+    }
+  };
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -260,11 +321,18 @@ export default function ShowroomScene() {
           editingObjectRef.current.position.copy(objectToPlaceRef.current.position);
           editingObjectRef.current.visible = true;
           scene.remove(objectToPlaceRef.current);
+
+          // 편집된 오브젝트 저장
+          saveObjectsToStorage(userAddedObjectsRef.current);
         } else {
           // 신규 배치: 고스트 박스를 실제 객체로 변환
           const newBox = finalizeBoxPlacement(objectToPlaceRef.current);
           scene.add(newBox);
-          setUserAddedObjects(prev => [...prev, newBox]);
+          setUserAddedObjects(prev => {
+            const updatedObjects = [...prev, newBox];
+            saveObjectsToStorage(updatedObjects);
+            return updatedObjects;
+          });
           scene.remove(objectToPlaceRef.current);
         }
 
@@ -445,6 +513,10 @@ export default function ShowroomScene() {
         // 모든 객체 로딩 완료 - 다음 프레임에 로딩 화면을 숨기도록 약간의 지연 추가 (부드러운 전환)
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
+            // 저장된 오브젝트들 로드
+            const loadedObjects = loadObjectsFromStorage();
+            setUserAddedObjects(loadedObjects);
+
             setIsLoading(false);
             console.log("=== All objects loaded successfully ===");
           });
