@@ -152,11 +152,9 @@ export default function ShowroomScene() {
   const loadObjectsFromStorage = (): THREE.Mesh[] => {
     try {
       const savedData = localStorage.getItem('manikinShowroomObjects');
-      console.log('Raw saved data:', savedData);
       if (!savedData || !sceneRef.current) return [];
 
       const objectsData = JSON.parse(savedData);
-      console.log('Parsed objects data:', objectsData);
 
       // 이전 버전 데이터 호환성 처리 (geometry, color 정보가 없는 경우)
       const normalizedObjectsData = objectsData.map((data: any) => ({
@@ -389,21 +387,8 @@ export default function ShowroomScene() {
         console.log('normalized mouse:', mouse.x, mouse.y);
         raycaster.setFromCamera(mouse, camera);
 
-        // 각 객체의 정보 출력
-        console.log('userAddedObjects count:', userAddedObjectsRef.current.length);
-        userAddedObjectsRef.current.forEach((obj, idx) => {
-          console.log(`Object ${idx}:`, {
-            uuid: obj.uuid,
-            position: obj.position,
-            visible: obj.visible,
-            geometry: obj.geometry.type,
-            material: obj.material.type
-          });
-        });
-
         // scene 전체에서 검색하되 userAddedObjects에 포함된 객체만 선택
         const allIntersects = raycaster.intersectObjects(scene.children, true);
-        console.log('all intersects from scene:', allIntersects.length);
 
         // userAddedObjects에 포함된 객체만 필터링
         const userAddedObjectUuids = new Set(userAddedObjectsRef.current.map(obj => obj.uuid));
@@ -411,8 +396,7 @@ export default function ShowroomScene() {
           userAddedObjectUuids.has(intersect.object.uuid)
         );
 
-        console.log('filtered intersects (userAddedObjects only):', intersects.length);
-        console.log('userAddedObjects uuids:', Array.from(userAddedObjectUuids));
+        console.log(`Click detected: ${intersects.length} user objects intersected`);
 
         if (intersects.length > 0) {
           console.log('첫 번째 intersect:', intersects[0]);
@@ -553,7 +537,6 @@ export default function ShowroomScene() {
           requestAnimationFrame(() => {
             // 저장된 오브젝트들 로드
             const loadedObjects = loadObjectsFromStorage();
-            console.log('Loaded objects from storage:', loadedObjects.length);
             setUserAddedObjects(loadedObjects);
 
             setIsLoading(false);
