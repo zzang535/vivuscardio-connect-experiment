@@ -1084,7 +1084,6 @@ export default function ShowroomScene() {
           onAddBox={handleAddBox}
           isPlacementMode={isPlacementMode}
           hasEditingObject={editingObject !== null}
-          onDeleteObject={handleDeleteObject}
         />
       )}
 

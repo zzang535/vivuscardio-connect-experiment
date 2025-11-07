@@ -4,14 +4,12 @@ interface ObjectControllerProps {
   onAddBox: () => void;
   isPlacementMode: boolean;
   hasEditingObject: boolean;
-  onDeleteObject: () => void;
 }
 
 export default function ObjectController({
   onAddBox,
   isPlacementMode,
-  hasEditingObject,
-  onDeleteObject
+  hasEditingObject
 }: ObjectControllerProps) {
   return (
     <div
@@ -55,37 +53,6 @@ export default function ObjectController({
         </button>
       )}
 
-      {/* 삭제 버튼 - 배치 모드이고 편집 중인 객체가 있을 때만 표시 */}
-      {isPlacementMode && hasEditingObject && (
-        <button
-          onClick={onDeleteObject}
-          style={{
-            width: '100%',
-            background: '#dc2626', // 빨간색
-            color: 'white',
-            border: 'none',
-            padding: '10px 14px',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontWeight: '600',
-            transition: 'all 0.2s',
-            marginTop: '8px',
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.backgroundColor = '#b91c1c';
-            e.currentTarget.style.transform = 'scale(1.05)';
-            e.currentTarget.style.boxShadow = '0 4px 12px rgba(220, 38, 38, 0.4)';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.backgroundColor = '#dc2626';
-            e.currentTarget.style.transform = 'scale(1)';
-            e.currentTarget.style.boxShadow = 'none';
-          }}
-        >
-          🗑️ 현재 객체 삭제
-        </button>
-      )}
     </div>
   );
 }
