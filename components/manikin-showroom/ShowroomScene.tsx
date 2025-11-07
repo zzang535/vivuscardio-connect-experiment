@@ -24,8 +24,16 @@ import {
   updateAutoMove,
   completeAutoMove,
 } from "@/lib/manikin-showroom/cameraAnimation";
-import { addBoxToScene } from "@/lib/manikin-showroom/objectControl";
+import {
+  createGhostBox,
+  createPlacementIndicator,
+  finalizeBoxPlacement,
+  placeObjectOnGrid,
+  snapToGrid
+} from "@/lib/manikin-showroom/objectControl";
 import ObjectController from "./ObjectController";
+import PlacementModeGuide from "./PlacementModeGuide";
+import DeleteZone from "./DeleteZone";
 
 export default function ShowroomScene() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -46,54 +54,38 @@ export default function ShowroomScene() {
   const [objectToPlace, setObjectToPlace] = useState<THREE.Mesh | null>(null);
   const placementIndicatorRef = useRef<THREE.Mesh | null>(null);
 
+  // 편집 모드 상태 (기존 객체를 이동하는 모드)
+  const [editingObject, setEditingObject] = useState<THREE.Mesh | null>(null);
+  const [originalPosition, setOriginalPosition] = useState<THREE.Vector3 | null>(null);
+
   // 배치 모드 상태를 참조하기 위한 ref
   const isPlacementModeRef = useRef(isPlacementMode);
   isPlacementModeRef.current = isPlacementMode;
   const objectToPlaceRef = useRef(objectToPlace);
   objectToPlaceRef.current = objectToPlace;
+  const editingObjectRef = useRef(editingObject);
+  editingObjectRef.current = editingObject;
+  const originalPositionRef = useRef(originalPosition);
+  originalPositionRef.current = originalPosition;
+  const userAddedObjectsRef = useRef<THREE.Mesh[]>(userAddedObjects);
+  userAddedObjectsRef.current = userAddedObjects;
 
   // 마우스 위치를 저장할 ref (Vector2 타입 사용)
   const mouseRef = useRef(new THREE.Vector2());
 
   const handleAddBox = () => {
     if (isPlacementMode) return; // 이미 배치 모드이면 중복 실행 방지
+    if (!sceneRef.current) return;
 
     setIsPlacementMode(true);
 
-    // 테이블과 유사한 크기 및 재질의 '고스트' 박스 생성
-    const boxGeometry = new THREE.BoxGeometry(
-      CONSTANTS.TABLE_SIZE.DEPTH, // width
-      CONSTANTS.TABLE_SIZE.HEIGHT, // height
-      CONSTANTS.TABLE_SIZE.DEPTH // depth
-    );
-    const ghostMaterial = new THREE.MeshStandardMaterial({
-      color: 0xffffff, // 흰색
-      opacity: 0.5,
-      transparent: true,
-      roughness: 0.8,
-      metalness: 0.2,
-    });
-    const ghostBox = new THREE.Mesh(boxGeometry, ghostMaterial);
-    ghostBox.castShadow = true;
-    ghostBox.receiveShadow = true;
-    ghostBox.position.y = -1000; // 처음에는 보이지 않는 곳에 배치
-    sceneRef.current?.add(ghostBox);
+    // 고스트 박스 생성 (유틸리티 함수 사용)
+    const ghostBox = createGhostBox(sceneRef.current);
     setObjectToPlace(ghostBox);
 
-    // 배치 위치를 표시할 인디케이터 생성
+    // 배치 위치 인디케이터 생성 (한 번만)
     if (!placementIndicatorRef.current) {
-      const indicatorGeometry = new THREE.PlaneGeometry(1, 1); // 1x1 크기
-      const indicatorMaterial = new THREE.MeshBasicMaterial({ 
-        color: 0x4A9EFF, 
-        side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 0.5
-      });
-      const indicator = new THREE.Mesh(indicatorGeometry, indicatorMaterial);
-      indicator.rotation.x = -Math.PI / 2;
-      indicator.position.y = CONSTANTS.GROUND_POSITION.Y + 0.02; // 그리드보다 살짝 위에
-      sceneRef.current?.add(indicator);
-      placementIndicatorRef.current = indicator;
+      placementIndicatorRef.current = createPlacementIndicator(sceneRef.current);
     }
   };
 
@@ -235,27 +227,119 @@ export default function ShowroomScene() {
     
     window.addEventListener('mousemove', handleWindowMouseMove);
 
-    const handleRendererClick = () => {
+    const handleRendererClick = (event: MouseEvent) => {
+      // 배치 모드일 때의 동작
       if (isPlacementModeRef.current && objectToPlaceRef.current) {
-        // 실제 객체 생성 및 배치
-        const newBox = objectToPlaceRef.current.clone();
-        (newBox.material as THREE.MeshStandardMaterial) = new THREE.MeshStandardMaterial({
-            color: 0xcccccc,
-            roughness: 0.8,
-            metalness: 0.2,
-        });
-        (newBox.material as THREE.MeshStandardMaterial).transparent = false;
-        (newBox.material as THREE.MeshStandardMaterial).opacity = 1;
-        
-        scene.add(newBox);
-        setUserAddedObjects(prev => [...prev, newBox]);
+        // 휴지통 영역 클릭 확인
+        const deleteZone = document.getElementById('delete-zone');
+        if (deleteZone) {
+          const rect = deleteZone.getBoundingClientRect();
+          const isInDeleteZone =
+            event.clientX >= rect.left &&
+            event.clientX <= rect.right &&
+            event.clientY >= rect.top &&
+            event.clientY <= rect.bottom;
+
+          if (isInDeleteZone && editingObjectRef.current) {
+            // 편집 중인 객체를 삭제
+            scene.remove(editingObjectRef.current);
+            setUserAddedObjects(prev => prev.filter(obj => obj !== editingObjectRef.current));
+
+            // 고스트 박스 제거
+            scene.remove(objectToPlaceRef.current);
+
+            // 상태 초기화
+            setObjectToPlace(null);
+            setIsPlacementMode(false);
+            setEditingObject(null);
+            setOriginalPosition(null);
+            if (placementIndicatorRef.current) {
+              placementIndicatorRef.current.visible = false;
+            }
+            return;
+          }
+        }
+
+        // 신규 배치 또는 재배치
+        if (editingObjectRef.current) {
+          // 편집 모드: 기존 객체 위치 업데이트 및 다시 표시
+          editingObjectRef.current.position.copy(objectToPlaceRef.current.position);
+          editingObjectRef.current.visible = true;
+          scene.remove(objectToPlaceRef.current);
+        } else {
+          // 신규 배치: 고스트 박스를 실제 객체로 변환
+          const newBox = finalizeBoxPlacement(objectToPlaceRef.current);
+          scene.add(newBox);
+          setUserAddedObjects(prev => [...prev, newBox]);
+          scene.remove(objectToPlaceRef.current);
+        }
 
         // 배치 모드 종료
-        scene.remove(objectToPlaceRef.current);
         setObjectToPlace(null);
         setIsPlacementMode(false);
+        setEditingObject(null);
+        setOriginalPosition(null);
         if (placementIndicatorRef.current) {
           placementIndicatorRef.current.visible = false;
+        }
+        return;
+      }
+
+      // 일반 모드: 사용자가 추가한 객체 클릭 감지
+      if (!isPlacementModeRef.current) {
+        console.log('=== 객체 클릭 감지 시도 ===');
+        console.log('userAddedObjects 개수:', userAddedObjectsRef.current.length);
+        console.log('클릭 위치:', event.clientX, event.clientY);
+
+        // 캔버스 기준으로 마우스 좌표 계산
+        const rect = renderer.domElement.getBoundingClientRect();
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2(
+          ((event.clientX - rect.left) / rect.width) * 2 - 1,
+          -((event.clientY - rect.top) / rect.height) * 2 + 1
+        );
+        console.log('normalized mouse:', mouse.x, mouse.y);
+        raycaster.setFromCamera(mouse, camera);
+
+        // 각 객체의 정보 출력
+        userAddedObjectsRef.current.forEach((obj, idx) => {
+          console.log(`Object ${idx}:`, {
+            position: obj.position,
+            visible: obj.visible,
+            geometry: obj.geometry,
+            material: obj.material
+          });
+        });
+
+        // userAddedObjects에서만 감지 (recursive=true로 자식까지 검색)
+        const intersects = raycaster.intersectObjects(userAddedObjectsRef.current, true);
+        console.log('intersects 개수:', intersects.length);
+        if (intersects.length > 0) {
+          console.log('첫 번째 intersect:', intersects[0]);
+        }
+
+        if (intersects.length > 0) {
+          const clickedObject = intersects[0].object as THREE.Mesh;
+          console.log('객체 클릭됨!', clickedObject);
+
+          // 편집 모드 시작
+          setEditingObject(clickedObject);
+          setOriginalPosition(clickedObject.position.clone());
+
+          // 고스트 박스 생성 (기존 객체를 숨기고 고스트로 대체)
+          const ghostBox = createGhostBox(scene);
+          ghostBox.position.copy(clickedObject.position);
+          setObjectToPlace(ghostBox);
+          setIsPlacementMode(true);
+
+          // 원본 객체 숨김
+          clickedObject.visible = false;
+
+          // 인디케이터 표시
+          if (!placementIndicatorRef.current) {
+            placementIndicatorRef.current = createPlacementIndicator(scene);
+          }
+          placementIndicatorRef.current.visible = true;
         }
       }
     };
@@ -264,14 +348,36 @@ export default function ShowroomScene() {
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && isPlacementModeRef.current) {
-        // 배치 모드 취소
-        if (objectToPlaceRef.current) {
-          scene.remove(objectToPlaceRef.current);
+        // 편집 모드: 원위치 복귀
+        if (editingObjectRef.current && originalPositionRef.current) {
+          // 원본 객체를 원래 위치로 복귀하고 다시 표시
+          editingObjectRef.current.position.copy(originalPositionRef.current);
+          editingObjectRef.current.visible = true;
+
+          // 고스트 박스 제거
+          if (objectToPlaceRef.current) {
+            scene.remove(objectToPlaceRef.current);
+          }
+
+          // 상태 초기화
+          setObjectToPlace(null);
+          setIsPlacementMode(false);
+          setEditingObject(null);
+          setOriginalPosition(null);
+          if (placementIndicatorRef.current) {
+            placementIndicatorRef.current.visible = false;
+          }
         }
-        setObjectToPlace(null);
-        setIsPlacementMode(false);
-        if (placementIndicatorRef.current) {
-          placementIndicatorRef.current.visible = false;
+        // 신규 배치 모드: 취소
+        else {
+          if (objectToPlaceRef.current) {
+            scene.remove(objectToPlaceRef.current);
+          }
+          setObjectToPlace(null);
+          setIsPlacementMode(false);
+          if (placementIndicatorRef.current) {
+            placementIndicatorRef.current.visible = false;
+          }
         }
       }
     };
@@ -598,24 +704,18 @@ export default function ShowroomScene() {
         raycaster.ray.intersectPlane(groundPlane, intersection);
 
         const gridSize = 1; // 그리드 한 칸의 크기
-        const snappedX = Math.round(intersection.x / gridSize) * gridSize;
-        const snappedZ = Math.round(intersection.z / gridSize) * gridSize;
 
-        // 고스트 객체 위치 업데이트 (그리드에 스냅)
-        objectToPlaceRef.current.position.set(
-          snappedX,
-          CONSTANTS.GROUND_POSITION.Y + CONSTANTS.TABLE_SIZE.HEIGHT / 2,
-          snappedZ
-        );
+        // 고스트 객체 위치 업데이트 (유틸리티 함수 사용)
+        placeObjectOnGrid(objectToPlaceRef.current, intersection, gridSize);
 
         // 인디케이터 위치 및 가시성 업데이트
-        placementIndicatorRef.current.position.set(snappedX, CONSTANTS.GROUND_POSITION.Y + 0.02, snappedZ);
+        const snappedPosition = snapToGrid(intersection, gridSize);
+        placementIndicatorRef.current.position.set(
+          snappedPosition.x,
+          CONSTANTS.GROUND_POSITION.Y + 0.02,
+          snappedPosition.z
+        );
         placementIndicatorRef.current.visible = true;
-
-        // 배치 모드 중에는 OrbitControls 비활성화
-        controls.enabled = false;
-      } else {
-        controls.enabled = true;
       }
 
       controls.update();
@@ -984,8 +1084,14 @@ export default function ShowroomScene() {
         </div>
       )}
 
-      {/* 오브젝트 컨트롤러 */}
-      {!isLoading && <ObjectController onAddBox={handleAddBox} />}
+      {/* 오브젝트 컨트롤러 (배치 모드가 아닐 때만 표시) */}
+      {!isLoading && !isPlacementMode && <ObjectController onAddBox={handleAddBox} />}
+
+      {/* 배치 모드 안내 (ESC 취소) - ObjectController 자리에 표시 */}
+      {!isLoading && isPlacementMode && <PlacementModeGuide isEditMode={editingObject !== null} />}
+
+      {/* 휴지통 영역 (편집 모드일 때만 표시) */}
+      {!isLoading && <DeleteZone isActive={isPlacementMode && editingObject !== null} />}
 
       {/* 로딩 화면 */}
       {isLoading && (
