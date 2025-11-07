@@ -89,6 +89,25 @@ export default function ShowroomScene() {
     }
   };
 
+  const handleDeleteObject = () => {
+    if (!sceneRef.current || !editingObject) return;
+
+    // 편집 중인 객체를 삭제
+    sceneRef.current.remove(editingObject);
+    setUserAddedObjects(prev => prev.filter(obj => obj !== editingObject));
+
+    // 고스트 박스 제거
+    if (objectToPlace) {
+      sceneRef.current.remove(objectToPlace);
+    }
+
+    // 상태 초기화
+    setObjectToPlace(null);
+    setEditingObject(null);
+    setOriginalPosition(null);
+    setIsPlacementMode(false);
+  };
+
   // 자동 카메라 무빙 상태 추적
   const [isAutoMoving, setIsAutoMoving] = useState(false);
   const autoMoveRef = useRef<AutoMoveState>(createAutoMoveState());
@@ -1084,8 +1103,15 @@ export default function ShowroomScene() {
         </div>
       )}
 
-      {/* 오브젝트 컨트롤러 (배치 모드가 아닐 때만 표시) */}
-      {!isLoading && !isPlacementMode && <ObjectController onAddBox={handleAddBox} />}
+      {/* 오브젝트 컨트롤러 (항상 표시) */}
+      {!isLoading && (
+        <ObjectController
+          onAddBox={handleAddBox}
+          isPlacementMode={isPlacementMode}
+          hasEditingObject={editingObject !== null}
+          onDeleteObject={handleDeleteObject}
+        />
+      )}
 
       {/* 배치 모드 안내 (ESC 취소) - ObjectController 자리에 표시 */}
       {!isLoading && isPlacementMode && <PlacementModeGuide isEditMode={editingObject !== null} />}
