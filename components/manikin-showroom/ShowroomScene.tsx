@@ -20,6 +20,7 @@ import {
   loadAEDModelOnTable,
   createLogoBanner,
   createGrid,
+  createCoordinateLabels,
 } from "@/lib/manikin-showroom/objects";
 import {
   type AutoMoveState,
@@ -629,6 +630,10 @@ export default function ShowroomScene() {
     scene.add(grid);
     console.log("Grid created on the ground");
 
+    // 좌표 라벨 생성 (5 단위로 표시)
+    createCoordinateLabels(scene, CONSTANTS.GROUND_SIZE.WIDTH, 5);
+    console.log("Coordinate labels created on the ground");
+
     // 모든 객체 로딩 상태 초기화
     loadingStateRef.current = {
       manikins: false,
@@ -686,26 +691,25 @@ export default function ShowroomScene() {
     );
 
     // 두 번째 테이블 생성 (세로 방향, L자 형태로 배치, 길이는 반으로)
-    const table2Width = table1Width / 2; // 첫 번째 테이블 길이의 반
+    // const table2Width = table1Width / 2; // 첫 번째 테이블 길이의 /
     const table2 = createTable(
-      table2Width, // 길이를 반으로
+      table1Width, // 길이를 반으로
       CONSTANTS.TABLE_SIZE.HEIGHT, // 높이는 동일
       CONSTANTS.TABLE_SIZE.DEPTH // 깊이는 동일
     );
     // 두 번째 테이블을 90도 회전시켜 세로 방향으로 만들고
     // 첫 번째 테이블의 오른쪽 끝과 겹치도록 배치하여 L자 형태 만듦
     // 회전 후: WIDTH(table2Width) → DEPTH, DEPTH(1.5) → WIDTH
-    const table1HalfWidth = table1Width / 2; // 첫 번째 테이블의 반 너비
+    const table1HalfWidth = table1Width / 2; // 첫 번째 테이블의 반 너비 (6.5)
     const table2RotatedWidth = CONSTANTS.TABLE_SIZE.DEPTH / 2; // 회전 후 두 번째 테이블의 반 너비 (0.75)
-    const table2RotatedDepth = table2Width / 2; // 회전 후 두 번째 테이블의 반 깊이
 
     // 두 번째 테이블의 중심 위치 계산
-    // X: 첫 번째 테이블의 오른쪽 끝 - 두 번째 테이블의 반 너비 (겹치도록)
-    // Z: 첫 번째 테이블의 앞쪽으로 배치하여 L자 형태 만듦
+    // X: 첫 번째 테이블의 오른쪽 끝에 두 번째 테이블의 반 너비를 더해 겹치도록 배치
+    // Z: 첫 번째 테이블의 앞쪽 끝과 맞춤 (갈색 테이블의 Z = 0, DEPTH = 1.5이므로 앞쪽 끝 = -0.75)
     table2.position.set(
-      table1HalfWidth + table2RotatedWidth, // 겹치도록 배치
+      table1HalfWidth + table2RotatedWidth, // X: 6.5 + 0.75 = 7.25 (겹치도록 배치)
       CONSTANTS.TABLE_POSITION.Y, // 같은 높이
-      table2RotatedDepth - CONSTANTS.TABLE_SIZE.DEPTH / 2 // 앞쪽으로 배치
+      5.5
     );
     // 두 번째 테이블을 90도 회전시켜 세로 방향으로 만듦
     table2.rotation.y = Math.PI / 2; // 90도 회전 (Y축 기준)
@@ -721,7 +725,7 @@ export default function ShowroomScene() {
       "Table 2 created (half width) at X:",
       table1HalfWidth + table2RotatedWidth,
       "Z:",
-      table2RotatedDepth - CONSTANTS.TABLE_SIZE.DEPTH / 2,
+      -CONSTANTS.TABLE_SIZE.DEPTH / 2,
       "rotation: 90deg, color: red (#B01A1A)"
     );
 

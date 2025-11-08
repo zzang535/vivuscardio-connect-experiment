@@ -609,3 +609,75 @@ export function createGrid(size: number, divisions: number): THREE.GridHelper {
   gridHelper.material.transparent = true;
   return gridHelper;
 }
+
+/**
+ * 좌표 라벨 텍스처 생성
+ * @param text 표시할 텍스트
+ * @returns Three.js Texture 객체
+ */
+function createCoordinateLabelTexture(text: string): THREE.CanvasTexture {
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("Failed to get canvas context");
+  }
+
+  canvas.width = 128;
+  canvas.height = 64;
+
+  // 배경 (반투명 검정)
+  context.fillStyle = "rgba(0, 0, 0, 0.7)";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+
+  // 텍스트 (흰색)
+  context.fillStyle = "#ffffff";
+  context.font = "bold 32px Arial";
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.fillText(text, canvas.width / 2, canvas.height / 2);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  return texture;
+}
+
+/**
+ * 바닥에 좌표 라벨 생성
+ * @param scene Three.js Scene 객체
+ * @param size 그리드 전체 크기
+ * @param step 라벨 표시 간격
+ */
+export function createCoordinateLabels(
+  scene: THREE.Scene,
+  size: number,
+  step: number = 5
+): void {
+  const halfSize = size / 2;
+  const labelHeight = CONSTANTS.GROUND_POSITION.Y + 0.02;
+
+  // X축과 Z축의 좌표 생성
+  for (let x = -halfSize; x <= halfSize; x += step) {
+    for (let z = -halfSize; z <= halfSize; z += step) {
+      // 원점(0,0)과 주요 축(X=0 또는 Z=0)에만 라벨 표시
+      if ((x === 0 && z === 0) || (x === 0 && z % 10 === 0) || (z === 0 && x % 10 === 0)) {
+        const labelText = `(${x},${z})`;
+        const texture = createCoordinateLabelTexture(labelText);
+
+        const geometry = new THREE.PlaneGeometry(1.5, 0.75);
+        const material = new THREE.MeshBasicMaterial({
+          map: texture,
+          transparent: true,
+          side: THREE.DoubleSide,
+        });
+
+        const label = new THREE.Mesh(geometry, material);
+        label.position.set(x, labelHeight, z);
+        label.rotation.x = -Math.PI / 2; // 바닥에 평평하게
+
+        scene.add(label);
+      }
+    }
+  }
+
+  console.log(`Created coordinate labels with step: ${step}`);
+}
