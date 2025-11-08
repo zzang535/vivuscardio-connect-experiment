@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import TrainingFeedbackPanel from "@/components/manikin-showroom/modal/TrainingFeedbackPanel";
-import TrainingManikinPanel from "@/components/manikin-showroom/modal/TrainingManikinPanel";
+import TrainingFeedbackPanel from "./TrainingFeedbackPanel";
+import TrainingManikinPanel from "./TrainingManikinPanel";
+import { POSITION_SETTINGS, DEPTH_SETTINGS, RATE_SETTINGS, VENTILATION_SETTINGS } from "@/lib/training-simulator/constants";
+import { calculateMetrics, TrainingMetrics } from "@/lib/training-simulator/calculateMetrics";
 
 interface CompressionData {
   position: { x: number; y: number };
@@ -54,6 +56,10 @@ export default function IPadModal({ isOpen, onClose }: IPadModalProps) {
   const [ventilationVolume, setVentilationVolume] = useState(0);
   const [isVentilating, setIsVentilating] = useState(false);
 
+  // 훈련 단계 및 결과 상태
+  const [trainingPhase, setTrainingPhase] = useState<'training' | 'result'>('training');
+  const [trainingMetrics, setTrainingMetrics] = useState<TrainingMetrics | null>(null);
+
   // ESC 키로 모달 닫기
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -77,22 +83,78 @@ export default function IPadModal({ isOpen, onClose }: IPadModalProps) {
       setVentilationResults([]);
       setVentilationVolume(0);
       setIsVentilating(false);
+      setTrainingPhase('training');
+      setTrainingMetrics(null);
     }
   }, [isOpen]);
 
+  // 훈련 완료 조건 체크 (압박 30회, 환기 2회)
+  useEffect(() => {
+    if (isOpen && trainingPhase === 'training' && compressionResults.length >= 30 && ventilationResults.length >= 2) {
+      console.log('Training complete! Compressions:', compressionResults.length, 'Ventilations:', ventilationResults.length);
+
+      const metrics = calculateMetrics(compressionResults, ventilationResults);
+      setTrainingMetrics(metrics);
+      setTrainingPhase('result');
+    }
+  }, [compressionResults, ventilationResults, isOpen, trainingPhase]);
+
+  // 재시작 핸들러
+  const handleRestart = () => {
+    setClickPosition({ x: 50, y: 40 });
+    setIsPressed(false);
+    setDepth(0);
+    setRateData(null);
+    setCompressionResults([]);
+    setVentilationResults([]);
+    setVentilationVolume(0);
+    setIsVentilating(false);
+    setTrainingPhase('training');
+    setTrainingMetrics(null);
+    console.log('Restarting training from result screen');
+  };
+
+  // 압박 평가 함수
+  const evaluateCompression = (position: { x: number; y: number }, maxDepth: number, rate: { interval: number; status?: string } | null) => {
+    const heartPos = POSITION_SETTINGS.HEART_POSITION;
+    const distance = Math.sqrt(
+      Math.pow(position.x - heartPos.x, 2) + Math.pow(position.y - heartPos.y, 2)
+    );
+    const positionPass = distance <= POSITION_SETTINGS.POSITION_TOLERANCE;
+
+    const depthPass = maxDepth >= DEPTH_SETTINGS.MIN_OPTIMAL_DEPTH &&
+                      maxDepth <= DEPTH_SETTINGS.MAX_OPTIMAL_DEPTH;
+
+    const ratePass = !rate ||
+                     (rate.interval >= RATE_SETTINGS.TOO_FAST_THRESHOLD &&
+                      rate.interval <= RATE_SETTINGS.TOO_SLOW_THRESHOLD);
+
+    return {
+      position: positionPass,
+      depth: depthPass,
+      rate: ratePass,
+      overall: positionPass && depthPass && ratePass
+    };
+  };
+
   // 압박 완료 핸들러
   const handleCompressionComplete = (compressionData: CompressionData) => {
-    // 간단한 평가 (실제 평가 로직은 생략)
+    const evaluation = evaluateCompression(
+      compressionData.position,
+      compressionData.maxDepth,
+      compressionData.rate
+    );
+
     const result: CompressionResult = {
       timestamp: compressionData.timestamp,
       position: compressionData.position,
       maxDepth: compressionData.maxDepth,
       rate: compressionData.rate,
       duration: compressionData.duration,
-      positionCorrect: true,
-      depthCorrect: true,
-      rateCorrect: true,
-      success: true,
+      positionCorrect: evaluation.position,
+      depthCorrect: evaluation.depth,
+      rateCorrect: evaluation.rate,
+      success: evaluation.overall,
     };
 
     setCompressionResults(prev => [...prev, result]);
@@ -100,12 +162,15 @@ export default function IPadModal({ isOpen, onClose }: IPadModalProps) {
 
   // 환기 완료 핸들러
   const handleVentilationComplete = (ventilationData: VentilationData) => {
+    const volumePass = ventilationData.volume >= VENTILATION_SETTINGS.MIN_OPTIMAL_VOLUME &&
+                      ventilationData.volume <= VENTILATION_SETTINGS.MAX_OPTIMAL_VOLUME;
+
     const result: VentilationResult = {
       timestamp: ventilationData.timestamp,
       volume: ventilationData.volume,
       duration: ventilationData.duration,
-      volumeCorrect: true,
-      success: true,
+      volumeCorrect: volumePass,
+      success: volumePass,
     };
 
     setVentilationResults(prev => [...prev, result]);
@@ -118,15 +183,10 @@ export default function IPadModal({ isOpen, onClose }: IPadModalProps) {
   useEffect(() => {
     const calculateModalSize = () => {
       const viewportHeight = window.innerHeight;
-
-      // 왼쪽 모달: 가로 1200px, 1.44:1 비율
       const leftWidth = 1200;
-      const leftHeight = leftWidth / 1.6; // 약 833px
-
-      // 오른쪽 모달: 화면 높이의 90%에 맞춤
+      const leftHeight = leftWidth / 1.6;
       const rightHeight = 700;
       const rightWidth = 350;
-
       setLeftModalSize({ width: leftWidth, height: leftHeight });
       setRightModalSize({ width: rightWidth, height: rightHeight });
     };
@@ -157,7 +217,6 @@ export default function IPadModal({ isOpen, onClose }: IPadModalProps) {
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* 태블릿 프레임 배경 이미지 */}
         <img
           src="/manikin-showroom/samsung-galaxy-tab-s7-medium.png"
           alt="Tablet Frame"
@@ -166,13 +225,9 @@ export default function IPadModal({ isOpen, onClose }: IPadModalProps) {
             userSelect: 'none',
           }}
         />
-
-        {/* 태블릿 화면 영역 (프레임 안쪽) */}
         <div
           className="absolute bg-gray-50 overflow-hidden"
           style={{
-            // 태블릿 프레임의 베젤을 고려한 화면 영역
-            // 실제 화면 영역은 프레임보다 약간 작음
             top: '2.5%',
             left: '2.2%',
             right: '2.2%',
@@ -202,7 +257,6 @@ export default function IPadModal({ isOpen, onClose }: IPadModalProps) {
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* 닫기 버튼 */}
         <button
           onClick={onClose}
           className="absolute top-0 right-0 z-[10001] flex items-center justify-center gap-1 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-full transition-colors"
@@ -224,7 +278,6 @@ export default function IPadModal({ isOpen, onClose }: IPadModalProps) {
           </svg>
           <span>닫기</span>
         </button>
-
         <TrainingManikinPanel
           onPositionChange={setClickPosition}
           onPressStateChange={setIsPressed}
@@ -234,7 +287,7 @@ export default function IPadModal({ isOpen, onClose }: IPadModalProps) {
           onVentilationVolumeChange={setVentilationVolume}
           onVentilationStateChange={setIsVentilating}
           onVentilationComplete={handleVentilationComplete}
-          disabled={false}
+          disabled={trainingPhase === 'result'}
         />
       </div>
     </div>
