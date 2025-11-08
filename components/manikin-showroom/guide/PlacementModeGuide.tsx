@@ -17,19 +17,19 @@ export default function PlacementModeGuide({ isEditMode = false }: PlacementMode
       style={{
         position: 'fixed',
         top: '20px',
-        right: '20px',
+        left: '20px',
         backgroundColor: 'rgba(0, 0, 0, 0.85)',
         color: '#ffffff',
         padding: '16px 20px',
-        borderRadius: '10px',
+        borderRadius: '12px',
         zIndex: 1000,
-        backdropFilter: 'blur(6px)',
+        backdropFilter: 'blur(10px)',
         border: '2px solid #4A9EFF',
-        boxShadow: '0 6px 16px rgba(74, 158, 255, 0.3)',
+        boxShadow: '0 8px 24px rgba(74, 158, 255, 0.4)',
         display: 'flex',
         flexDirection: 'column',
         gap: '12px',
-        minWidth: '220px',
+        minWidth: '240px',
       }}
     >
       {/* 배치 안내 문구 */}

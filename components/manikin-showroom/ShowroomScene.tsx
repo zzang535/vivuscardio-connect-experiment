@@ -27,13 +27,16 @@ import {
 import {
   createGhostBox,
   createPlacementIndicator,
-  finalizeBoxPlacement,
-  placeObjectOnGrid,
   snapToGrid
 } from "@/lib/manikin-showroom/objectControl";
-import ObjectController from "./ObjectController";
-import PlacementModeGuide from "./PlacementModeGuide";
-import DeleteZone from "./DeleteZone";
+import { UserInteractionManager } from "@/lib/manikin-showroom/userInteraction";
+import { AVAILABLE_MODELS, ModelType } from "@/lib/manikin-showroom/modelTypes";
+import Editor from "./editor/Editor";
+import PlacementModeGuide from "./guide/PlacementModeGuide";
+import DeleteZone from "./editor/DeleteZone";
+import ModelSelector from "./editor/ModelSelector";
+import MouseControlGuide from "./camera/MouseControlGuide";
+import Camera360Button from "./action/Camera360Button";
 
 export default function ShowroomScene() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -41,6 +44,10 @@ export default function ShowroomScene() {
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
+  const groundRef = useRef<THREE.Mesh | null>(null);
+
+  // UserInteractionManager 인스턴스
+  const interactionManagerRef = useRef<UserInteractionManager | null>(null);
 
   // 모든 객체 로딩 상태 추적
   const loadingStateRef = useRef({
@@ -80,6 +87,30 @@ export default function ShowroomScene() {
 
   // 마우스 위치를 저장할 ref (Vector2 타입 사용)
   const mouseRef = useRef(new THREE.Vector2());
+
+  // 모델 선택 패널 표시 상태
+  const [showModelSelector, setShowModelSelector] = useState(false);
+
+  // 모델 선택 패널 열기
+  const handleOpenModelSelector = () => {
+    setShowModelSelector(true);
+  };
+
+  // 모델 선택 패널 닫기
+  const handleCloseModelSelector = () => {
+    setShowModelSelector(false);
+  };
+
+  // 모델 선택 처리
+  const handleSelectModel = (modelType: ModelType) => {
+    console.log('Model selected:', modelType);
+    setShowModelSelector(false);
+
+    // UserInteractionManager를 통해 배치 모드 시작
+    if (interactionManagerRef.current) {
+      interactionManagerRef.current.startPlacementMode(modelType);
+    }
+  };
 
   const handleAddBox = () => {
     if (isPlacementMode) return; // 이미 배치 모드이면 중복 실행 방지
@@ -332,155 +363,10 @@ export default function ShowroomScene() {
     console.log("- maxDistance:", controls.maxDistance);
     console.log("- minTargetY (panning limit):", minTargetY);
 
-    // --- 배치 모드 로직 ---
+    // --- UserInteractionManager 초기화 ---
+    // ground가 생성된 후에 초기화해야 하므로 나중에 초기화
     const raycaster = new THREE.Raycaster();
     const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -CONSTANTS.GROUND_POSITION.Y);
-
-    const handleWindowMouseMove = (event: MouseEvent) => {
-      const x = (event.clientX / window.innerWidth) * 2 - 1;
-      const y = -(event.clientY / window.innerHeight) * 2 + 1;
-      mouseRef.current.set(x, y);
-    };
-    
-    window.addEventListener('mousemove', handleWindowMouseMove);
-
-    const handleRendererClick = (event: MouseEvent) => {
-      // 배치 모드일 때의 동작
-      if (isPlacementModeRef.current && objectToPlaceRef.current) {
-        // 유효하지 않은 위치에는 배치할 수 없음
-        if (!isPlacementValidRef.current) {
-          console.log("Placement is invalid, cannot place object.");
-          return;
-        }
-
-        // 신규 배치 또는 재배치
-        if (editingObjectRef.current) {
-          // 편집 모드: 기존 객체 위치 업데이트 및 다시 표시
-          editingObjectRef.current.position.copy(objectToPlaceRef.current.position);
-          editingObjectRef.current.visible = true;
-          scene.remove(objectToPlaceRef.current);
-
-          // 편집된 오브젝트 저장
-          saveObjectsToStorage(userAddedObjectsRef.current);
-        } else {
-          // 신규 배치: 고스트 박스를 실제 객체로 변환
-          const newBox = finalizeBoxPlacement(objectToPlaceRef.current);
-          scene.add(newBox);
-          setUserAddedObjects(prev => {
-            const updatedObjects = [...prev, newBox];
-            saveObjectsToStorage(updatedObjects);
-            return updatedObjects;
-          });
-          scene.remove(objectToPlaceRef.current);
-        }
-
-        // 배치 모드 종료
-        setObjectToPlace(null);
-        setIsPlacementMode(false);
-        setEditingObject(null);
-        setOriginalPosition(null);
-        if (placementIndicatorRef.current) {
-          placementIndicatorRef.current.visible = false;
-        }
-        return;
-      }
-
-      // 일반 모드: 사용자가 추가한 객체 클릭 감지
-      if (!isPlacementModeRef.current) {
-        console.log('=== 객체 클릭 감지 시도 ===');
-        console.log('userAddedObjects 개수:', userAddedObjectsRef.current.length);
-        console.log('클릭 위치:', event.clientX, event.clientY);
-
-        // 캔버스 기준으로 마우스 좌표 계산
-        const rect = renderer.domElement.getBoundingClientRect();
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2(
-          ((event.clientX - rect.left) / rect.width) * 2 - 1,
-          -((event.clientY - rect.top) / rect.height) * 2 + 1
-        );
-        console.log('normalized mouse:', mouse.x, mouse.y);
-        raycaster.setFromCamera(mouse, camera);
-
-        // scene 전체에서 검색하되 userAddedObjects에 포함된 객체만 선택
-        const allIntersects = raycaster.intersectObjects(scene.children, true);
-
-        // userAddedObjects에 포함된 객체만 필터링
-        const userAddedObjectUuids = new Set(userAddedObjectsRef.current.map(obj => obj.uuid));
-        const intersects = allIntersects.filter(intersect =>
-          userAddedObjectUuids.has(intersect.object.uuid)
-        );
-
-        console.log(`Click detected: ${intersects.length} user objects intersected`);
-
-        if (intersects.length > 0) {
-          console.log('첫 번째 intersect:', intersects[0]);
-        }
-
-        if (intersects.length > 0) {
-          const clickedObject = intersects[0].object as THREE.Mesh;
-          console.log('객체 클릭됨!', clickedObject);
-
-          // 편집 모드 시작
-          setEditingObject(clickedObject);
-          setOriginalPosition(clickedObject.position.clone());
-
-          // 고스트 박스 생성 (기존 객체를 숨기고 고스트로 대체)
-          const ghostBox = createGhostBox(scene);
-          ghostBox.position.copy(clickedObject.position);
-          setObjectToPlace(ghostBox);
-          setIsPlacementMode(true);
-
-          // 원본 객체 숨김
-          clickedObject.visible = false;
-
-          // 인디케이터 표시
-          if (!placementIndicatorRef.current) {
-            placementIndicatorRef.current = createPlacementIndicator(scene);
-          }
-          placementIndicatorRef.current.visible = true;
-        }
-      }
-    };
-
-    renderer.domElement.addEventListener('click', handleRendererClick);
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && isPlacementModeRef.current) {
-        // 편집 모드: 원위치 복귀
-        if (editingObjectRef.current && originalPositionRef.current) {
-          // 원본 객체를 원래 위치로 복귀하고 다시 표시
-          editingObjectRef.current.position.copy(originalPositionRef.current);
-          editingObjectRef.current.visible = true;
-
-          // 고스트 박스 제거
-          if (objectToPlaceRef.current) {
-            scene.remove(objectToPlaceRef.current);
-          }
-
-          // 상태 초기화
-          setObjectToPlace(null);
-          setIsPlacementMode(false);
-          setEditingObject(null);
-          setOriginalPosition(null);
-          if (placementIndicatorRef.current) {
-            placementIndicatorRef.current.visible = false;
-          }
-        }
-        // 신규 배치 모드: 취소
-        else {
-          if (objectToPlaceRef.current) {
-            scene.remove(objectToPlaceRef.current);
-          }
-          setObjectToPlace(null);
-          setIsPlacementMode(false);
-          if (placementIndicatorRef.current) {
-            placementIndicatorRef.current.visible = false;
-          }
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
 
     console.log("Event listeners attached to canvas");
     console.log(
@@ -525,6 +411,7 @@ export default function ShowroomScene() {
     // 지면 생성
     const ground = createGround();
     scene.add(ground);
+    groundRef.current = ground;
     console.log("Ground created at Y:", CONSTANTS.GROUND_POSITION.Y);
 
     // 그리드 생성
@@ -780,6 +667,41 @@ export default function ShowroomScene() {
       }
     );
 
+    // UserInteractionManager 초기화 (ground 생성 이후)
+    if (groundRef.current) {
+      const interactionManager = new UserInteractionManager(
+        {
+          scene,
+          camera,
+          renderer,
+          controls,
+          ground: groundRef.current,
+          userAddedObjectsRef,
+          isPlacementModeRef,
+          objectToPlaceRef,
+          editingObjectRef,
+          originalPositionRef,
+          isPlacementValidRef,
+          mouseRef,
+          placementIndicatorRef,
+        },
+        {
+          setIsPlacementMode,
+          setObjectToPlace,
+          setEditingObject,
+          setOriginalPosition,
+          setUserAddedObjects,
+          setIsPlacementValid,
+          saveObjectsToStorage,
+        }
+      );
+
+      interactionManager.setup();
+      interactionManagerRef.current = interactionManager;
+
+      console.log("UserInteractionManager initialized and setup complete");
+    }
+
     // 충돌 감지 헬퍼 함수
     const checkCollision = (object: THREE.Mesh, objects: THREE.Mesh[]): boolean => {
       if (!object) return false;
@@ -897,30 +819,9 @@ export default function ShowroomScene() {
         placementIndicatorRef.current.visible = false;
       }
 
-      // --- 마우스 커서 변경 로직 ---
-      if (rendererRef.current && cameraRef.current) {
-        // 1. 편집 모드 (기존 객체 이동)일 때: 'grabbing'
-        if (isPlacementModeRef.current && editingObjectRef.current) {
-          rendererRef.current.domElement.style.cursor = 'grabbing';
-        }
-        // 2. 배치 모드 (신규 객체 추가)일 때: 'crosshair'
-        else if (isPlacementModeRef.current) {
-          rendererRef.current.domElement.style.cursor = 'crosshair';
-        }
-        // 3. 일반 모드일 때
-        else {
-          raycaster.setFromCamera(mouseRef.current, cameraRef.current);
-          const intersects = raycaster.intersectObjects(userAddedObjectsRef.current, false);
-
-          // 3.1. 잡을 수 있는 객체 위에 마우스가 있을 때: 'grab'
-          if (intersects.length > 0) {
-            rendererRef.current.domElement.style.cursor = 'grab';
-          }
-          // 3.2. 그 외 (배경 등): 'auto' (기본 커서)
-          else {
-            rendererRef.current.domElement.style.cursor = 'auto';
-          }
-        }
+      // --- 마우스 커서 변경 로직 (UserInteractionManager 사용) ---
+      if (interactionManagerRef.current) {
+        interactionManagerRef.current.updateCursor();
       }
 
 
@@ -948,9 +849,11 @@ export default function ShowroomScene() {
       console.log("=== Cleaning up Three.js scene ===");
       window.removeEventListener("resize", handleResize);
 
-      window.removeEventListener('mousemove', handleWindowMouseMove);
-      renderer.domElement.removeEventListener('click', handleRendererClick);
-      window.removeEventListener('keydown', handleKeyDown);
+      // UserInteractionManager cleanup
+      if (interactionManagerRef.current) {
+        interactionManagerRef.current.cleanup();
+        interactionManagerRef.current = null;
+      }
 
       if (
         container &&
@@ -996,307 +899,41 @@ export default function ShowroomScene() {
         }}
       />
 
-      {/* 마우스 컨트롤 안내 박스 */}
+      {/* 마우스 컨트롤 안내 - 우측 상단 */}
+      {!isLoading && <MouseControlGuide />}
+
+      {/* 360도 둘러보기 버튼 - 우측 하단 */}
       {!isLoading && (
-        <div
-          style={{
-            position: "fixed",
-            top: "20px",
-            left: "20px",
-            backgroundColor: "rgba(0, 0, 0, 0.75)",
-            color: "#ffffff",
-            padding: "16px 20px",
-            borderRadius: "10px",
-            fontSize: "14px",
-            lineHeight: "1.6",
-            zIndex: 1000,
-            backdropFilter: "blur(6px)",
-            border: "1px solid rgba(255, 255, 255, 0.15)",
-            boxShadow: "0 6px 16px rgba(0, 0, 0, 0.4)",
-            minWidth: "200px",
+        <Camera360Button
+          isMoving={isAutoMoving}
+          onClick={() => {
+            if (cameraRef.current && controlsRef.current) {
+              startAutoMove(
+                autoMoveRef.current,
+                cameraRef.current,
+                controlsRef.current
+              );
+              setIsAutoMoving(true);
+            }
           }}
-        >
-          <div
-            style={{
-              fontWeight: "700",
-              marginBottom: "12px",
-              fontSize: "16px",
-              letterSpacing: "0.3px",
-            }}
-          >
-            마우스 컨트롤
-          </div>
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "14px" }}
-          >
-            {/* 드래그 */}
-            <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-              {/* 왼쪽: 마우스 좌클릭 */}
-              <svg
-                width="40"
-                height="40"
-                viewBox="0 0 40 40"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <rect
-                  x="10"
-                  y="6"
-                  width="20"
-                  height="28"
-                  rx="10"
-                  fill="#E8E8E8"
-                  stroke="#555"
-                  strokeWidth="2"
-                />
-                <path
-                  d="M20 6C14.477 6 10 10.477 10 16V18H20V6Z"
-                  fill="#4A9EFF"
-                />
-                <line
-                  x1="20"
-                  y1="6"
-                  x2="20"
-                  y2="18"
-                  stroke="#555"
-                  strokeWidth="2"
-                />
-              </svg>
-
-              {/* 중앙: + 기호 */}
-              <div
-                style={{
-                  fontSize: "20px",
-                  fontWeight: "700",
-                  color: "#999",
-                  lineHeight: "1",
-                }}
-              >
-                +
-              </div>
-
-              {/* 오른쪽: 회전 화살표 */}
-              <svg
-                width="40"
-                height="40"
-                viewBox="0 0 40 40"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M30 20C30 25 27 28 23 29.5"
-                  stroke="#4A9EFF"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                />
-                <path d="M20 27L23 29.5L25 26" fill="#4A9EFF" />
-                <path
-                  d="M10 20C10 15 13 12 17 10.5"
-                  stroke="#4A9EFF"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                />
-                <path d="M20 13L17 10.5L15 14" fill="#4A9EFF" />
-                <circle
-                  cx="20"
-                  cy="20"
-                  r="3"
-                  fill="none"
-                  stroke="#4A9EFF"
-                  strokeWidth="1.5"
-                  strokeDasharray="2 2"
-                />
-              </svg>
-
-              <div style={{ marginLeft: "4px" }}>
-                <div style={{ fontWeight: "600", marginBottom: "2px" }}>
-                  드래그
-                </div>
-                <div style={{ fontSize: "12px", opacity: 0.85 }}>화면 회전</div>
-              </div>
-            </div>
-
-            {/* 스크롤 */}
-            <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-              {/* 왼쪽: 마우스 휠 */}
-              <svg
-                width="40"
-                height="40"
-                viewBox="0 0 40 40"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <rect
-                  x="10"
-                  y="6"
-                  width="20"
-                  height="28"
-                  rx="10"
-                  fill="#E8E8E8"
-                  stroke="#555"
-                  strokeWidth="2"
-                />
-                <line
-                  x1="20"
-                  y1="6"
-                  x2="20"
-                  y2="18"
-                  stroke="#555"
-                  strokeWidth="2"
-                />
-                {/* 중앙 휠 영역 파란색 */}
-                <rect
-                  x="17"
-                  y="10"
-                  width="6"
-                  height="12"
-                  rx="3"
-                  fill="#4A9EFF"
-                />
-                {/* 휠 상하 화살표 */}
-                <path
-                  d="M19 13L20 11L21 13"
-                  stroke="white"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M21 17L20 19L19 17"
-                  stroke="white"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-
-              {/* 중앙: = 기호 */}
-              <div
-                style={{
-                  fontSize: "20px",
-                  fontWeight: "700",
-                  color: "#999",
-                  lineHeight: "1",
-                }}
-              >
-                =
-              </div>
-
-              {/* 오른쪽: 확대/축소 */}
-              <svg
-                width="40"
-                height="40"
-                viewBox="0 0 40 40"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <circle
-                  cx="20"
-                  cy="20"
-                  r="12"
-                  stroke="#4A9EFF"
-                  strokeWidth="2.5"
-                  fill="none"
-                />
-                <line
-                  x1="14"
-                  y1="20"
-                  x2="26"
-                  y2="20"
-                  stroke="#4A9EFF"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                />
-                <line
-                  x1="20"
-                  y1="14"
-                  x2="20"
-                  y2="26"
-                  stroke="#4A9EFF"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M28 28L33 33"
-                  stroke="#4A9EFF"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                />
-              </svg>
-
-              <div style={{ marginLeft: "4px" }}>
-                <div style={{ fontWeight: "600", marginBottom: "2px" }}>
-                  스크롤
-                </div>
-                <div style={{ fontSize: "12px", opacity: 0.85 }}>확대/축소</div>
-              </div>
-            </div>
-
-            {/* 재생 버튼 */}
-            <button
-              onClick={() => {
-                if (cameraRef.current && controlsRef.current) {
-                  startAutoMove(
-                    autoMoveRef.current,
-                    cameraRef.current,
-                    controlsRef.current
-                  );
-                  setIsAutoMoving(true);
-                }
-              }}
-              disabled={isAutoMoving}
-              style={{
-                marginTop: "8px",
-                width: "100%",
-                padding: "10px",
-                backgroundColor: isAutoMoving ? "#666" : "#4A9EFF",
-                color: "#ffffff",
-                border: "none",
-                borderRadius: "6px",
-                fontSize: "13px",
-                fontWeight: "600",
-                cursor: isAutoMoving ? "not-allowed" : "pointer",
-                transition: "all 0.2s ease",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "8px",
-              }}
-              onMouseEnter={(e) => {
-                if (!isAutoMoving) {
-                  e.currentTarget.style.backgroundColor = "#3A8EEF";
-                  e.currentTarget.style.boxShadow =
-                    "0 2px 8px rgba(74, 158, 255, 0.4)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isAutoMoving) {
-                  e.currentTarget.style.backgroundColor = "#4A9EFF";
-                  e.currentTarget.style.boxShadow = "none";
-                }
-              }}
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="currentColor"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path d="M3 1.5v13l10-6.5L3 1.5z" fill="currentColor" />
-              </svg>
-              {isAutoMoving ? "무빙 중..." : "360° 둘러보기"}
-            </button>
-          </div>
-        </div>
+        />
       )}
 
       {/* 오브젝트 컨트롤러 (항상 표시) */}
       {!isLoading && (
-        <ObjectController
-          onAddBox={handleAddBox}
+        <Editor
+          onOpenModelSelector={handleOpenModelSelector}
           isPlacementMode={isPlacementMode}
           hasEditingObject={editingObject !== null}
+        />
+      )}
+
+      {/* 모델 선택 패널 */}
+      {!isLoading && showModelSelector && (
+        <ModelSelector
+          models={AVAILABLE_MODELS}
+          onSelectModel={handleSelectModel}
+          onClose={handleCloseModelSelector}
         />
       )}
 

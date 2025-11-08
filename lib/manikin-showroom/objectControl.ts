@@ -1,17 +1,26 @@
 import * as THREE from 'three';
 import * as CONSTANTS from './constants';
+import { ModelType } from './modelTypes';
 
 /**
  * 고스트 박스 생성 (배치 모드용 반투명 미리보기 객체)
  * - 바닥면은 하늘색으로 표시되어 배치 위치를 명확히 함
  * @param scene Three.js Scene 객체
+ * @param modelType 선택된 모델 타입 (옵션, 없으면 기본값 사용)
  * @returns 생성된 고스트 박스 메쉬
  */
-export function createGhostBox(scene: THREE.Scene): THREE.Mesh {
+export function createGhostBox(scene: THREE.Scene, modelType?: ModelType): THREE.Mesh {
+  // 모델 타입이 주어지면 해당 크기 사용, 아니면 기본값
+  const dimensions = modelType?.dimensions || {
+    width: CONSTANTS.TABLE_SIZE.DEPTH,
+    height: CONSTANTS.TABLE_SIZE.HEIGHT,
+    depth: CONSTANTS.TABLE_SIZE.DEPTH,
+  };
+
   const boxGeometry = new THREE.BoxGeometry(
-    CONSTANTS.TABLE_SIZE.DEPTH, // width
-    CONSTANTS.TABLE_SIZE.HEIGHT, // height
-    CONSTANTS.TABLE_SIZE.DEPTH // depth
+    dimensions.width,
+    dimensions.height,
+    dimensions.depth
   );
 
   // 각 면마다 다른 재질 적용 (바닥면만 하늘색)
@@ -103,13 +112,15 @@ export function createPlacementIndicator(scene: THREE.Scene): THREE.Mesh {
 /**
  * 고스트 박스를 실제 배치용 객체로 변환
  * @param ghostBox 고스트 박스 메쉬
+ * @param modelType 선택된 모델 타입 (옵션, 없으면 기본 회색)
  * @returns 최종 배치용 박스 메쉬
  */
-export function finalizeBoxPlacement(ghostBox: THREE.Mesh): THREE.Mesh {
+export function finalizeBoxPlacement(ghostBox: THREE.Mesh, modelType?: ModelType): THREE.Mesh {
   const finalBox = ghostBox.clone();
-  // 불투명한 재질로 변경
+  // 불투명한 재질로 변경 (모델 타입의 색상 사용)
+  const color = modelType?.color || 0xcccccc;
   finalBox.material = new THREE.MeshStandardMaterial({
-    color: 0xcccccc, // 밝은 회색
+    color: color,
     roughness: 0.8,
     metalness: 0.2,
     transparent: false,
