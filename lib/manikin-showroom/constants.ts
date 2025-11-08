@@ -1,5 +1,4 @@
-import { MANIKIN_MODEL_PATH } from './assets';
-import { MANIKIN_INFO } from './texts';
+
 
 /**
  * Manikin Showroom 3D Viewer 설정

@@ -5,6 +5,8 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import * as CONSTANTS from "@/lib/manikin-showroom/constants";
+import * as TEXT from "@/lib/manikin-showroom/texts";
+import * as ASSETS from "@/lib/manikin-showroom/assets";
 import { CAMERA_TOUR_MUSIC_PATH } from "@/lib/manikin-showroom/assets";
 import {
   createGround,
@@ -221,7 +223,7 @@ export default function ShowroomScene() {
       modelPath:
         existing?.modelPath ||
         ((data.type || existing?.type) === 'model'
-          ? CONSTANTS.MANIKIN_MODEL_PATH
+          ? ASSETS.MANIKIN_MODEL_PATH
           : undefined),
       icon:
         existing?.icon ||
@@ -730,7 +732,7 @@ export default function ShowroomScene() {
     const manikinMaterial = createManikinMaterial();
 
     loader.load(
-      CONSTANTS.MANIKIN_MODEL_PATH,
+      ASSETS.MANIKIN_MODEL_PATH,
       (object) => {
         console.log("=== OBJ file loaded successfully ===");
         manikinTemplateRef.current = object; // 마네킹 템플릿 저장
@@ -753,7 +755,7 @@ export default function ShowroomScene() {
 
         // 각 마네킹 앞에 포스터 생성 및 배치
         positions.forEach((xPosition, index) => {
-          const manikinInfo = CONSTANTS.MANIKIN_INFO[index];
+          const manikinInfo = TEXT.MANIKIN_INFO[index];
           if (manikinInfo) {
             const poster = createPoster(
               manikinInfo.name,
