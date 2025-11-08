@@ -20,6 +20,8 @@ import {
   loadAEDModelOnTable,
   createLogoBanner,
   createGrid,
+  createAxesHelper,
+  createAxesLabels,
   createCoordinateLabels,
 } from "@/lib/manikin-showroom/objects";
 import {
@@ -100,7 +102,7 @@ export default function ShowroomScene() {
   const [modelsToShow, setModelsToShow] = useState<ModelType[]>([]);
 
   // 좌표계 표시 상태
-  const [showCoordinates, setShowCoordinates] = useState(false);
+  const [showCoordinates, setShowCoordinates] = useState(true);
   const coordinateObjectsRef = useRef<THREE.Object3D[]>([]); // 좌표계 객체들 저장
 
   // 박스 모델 선택 패널 열기
@@ -133,7 +135,11 @@ export default function ShowroomScene() {
 
   // 좌표계 토글 처리
   const handleToggleCoordinates = () => {
-    setShowCoordinates(prev => !prev);
+    const newShowCoordinates = !showCoordinates;
+    setShowCoordinates(newShowCoordinates);
+    coordinateObjectsRef.current.forEach(obj => {
+      obj.visible = newShowCoordinates;
+    });
   };
 
   const registerObjectMetadata = (object: THREE.Object3D, modelType: ModelType) => {
@@ -461,13 +467,7 @@ export default function ShowroomScene() {
     }
   }, [isAutoMoving]);
 
-  // 좌표계 표시/숨김 처리
-  useEffect(() => {
-    coordinateObjectsRef.current.forEach(obj => {
-      obj.visible = showCoordinates;
-    });
-    console.log(`Coordinates ${showCoordinates ? 'shown' : 'hidden'}`);
-  }, [showCoordinates]);
+
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -642,18 +642,63 @@ export default function ShowroomScene() {
     groundRef.current = ground;
     console.log("Ground created at Y:", CONSTANTS.GROUND_POSITION.Y);
 
-    // 그리드 생성
-    const grid = createGrid(CONSTANTS.GROUND_SIZE.WIDTH, CONSTANTS.GROUND_SIZE.WIDTH); // 50x50 그리드
-    scene.add(grid);
-    console.log("Grid created on the ground");
+        // 그리드 및 좌표계 생성
 
-    // 좌표 라벨 생성 (5 단위로 표시) - 처음에는 숨김
-    const coordinateLabels = createCoordinateLabels(scene, CONSTANTS.GROUND_SIZE.WIDTH, 5);
-    coordinateLabels.forEach(label => {
-      label.visible = false; // 초기에는 숨김
-    });
-    coordinateObjectsRef.current = [grid, ...coordinateLabels]; // 그리드와 라벨 모두 저장
-    console.log("Coordinate labels created on the ground (initially hidden)");
+        const grid = createGrid(
+
+          CONSTANTS.GROUND_SIZE.WIDTH,
+
+          CONSTANTS.GROUND_SIZE.WIDTH
+
+        );
+
+        const axesHelper = createAxesHelper(10);
+
+        const axesLabels = createAxesLabels(10);
+
+        const coordinateLabels = createCoordinateLabels(
+
+          scene,
+
+          CONSTANTS.GROUND_SIZE.WIDTH,
+
+          5
+
+        );
+
+    
+
+        coordinateObjectsRef.current = [
+
+          grid,
+
+          axesHelper,
+
+          ...axesLabels,
+
+          ...coordinateLabels,
+
+        ];
+
+    
+
+        coordinateObjectsRef.current.forEach((obj) => {
+
+          scene.add(obj);
+
+          obj.visible = showCoordinates;
+
+        });
+
+    
+
+        console.log(
+
+          "Coordinate objects created and visibility set to:",
+
+          showCoordinates
+
+        );
 
     // 모든 객체 로딩 상태 초기화
     loadingStateRef.current = {

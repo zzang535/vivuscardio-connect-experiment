@@ -611,6 +611,52 @@ export function createGrid(size: number, divisions: number): THREE.GridHelper {
 }
 
 /**
+ * 축 헬퍼 생성 (X, Y, Z 축 시각화)
+ * @param size 축의 길이
+ * @returns Three.js AxesHelper 객체
+ */
+export function createAxesHelper(size: number): THREE.AxesHelper {
+  const axesHelper = new THREE.AxesHelper(size);
+  axesHelper.position.y = CONSTANTS.GROUND_POSITION.Y + 0.01; // 지면보다 살짝 위에 위치
+  return axesHelper;
+}
+
+function createAxisLabel(text: string, color: string, size: number): THREE.Sprite {
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+  const fontSize = 64;
+  canvas.width = 128;
+  canvas.height = 128;
+  
+  if (context) {
+    context.font = `bold ${fontSize}px Arial`;
+    context.fillStyle = color;
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillText(text, canvas.width / 2, canvas.height / 2);
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+  const sprite = new THREE.Sprite(spriteMaterial);
+  sprite.scale.set(size * 0.2, size * 0.2, 1);
+  return sprite;
+}
+
+export function createAxesLabels(size: number): THREE.Object3D[] {
+  const xLabel = createAxisLabel('X', '#ff0000', size);
+  xLabel.position.set(size, 0.5, 0);
+
+  const yLabel = createAxisLabel('Y', '#00ff00', size);
+  yLabel.position.set(0, size + 0.5, 0);
+
+  const zLabel = createAxisLabel('Z', '#0000ff', size);
+  zLabel.position.set(0, 0.5, size);
+
+  return [xLabel, yLabel, zLabel];
+}
+
+/**
  * 좌표 라벨 텍스처 생성
  * @param text 표시할 텍스트
  * @returns Three.js Texture 객체
