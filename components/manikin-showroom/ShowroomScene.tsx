@@ -47,6 +47,7 @@ export default function ShowroomScene() {
   const controlsRef = useRef<OrbitControls | null>(null);
   const groundRef = useRef<THREE.Mesh | null>(null);
   const manikinTemplateRef = useRef<THREE.Object3D | null>(null);
+  const musicRef = useRef<HTMLAudioElement | null>(null);
 
   // UserInteractionManager 인스턴스
   const interactionManagerRef = useRef<UserInteractionManager | null>(null);
@@ -412,6 +413,43 @@ export default function ShowroomScene() {
       return [];
     }
   };
+
+  useEffect(() => {
+    // Pixabay (CC0) track: https://pixabay.com/music/corporate-adventure-begins-14872/
+    const backgroundAudio = new Audio(
+      "https://cdn.pixabay.com/download/audio/2022/03/01/audio_8f8c084e5675.mp3?filename=adventure-begins-14872.mp3"
+    );
+    backgroundAudio.loop = true;
+    backgroundAudio.volume = 0.35;
+    backgroundAudio.preload = "auto";
+    backgroundAudio.crossOrigin = "anonymous";
+    musicRef.current = backgroundAudio;
+
+    return () => {
+      backgroundAudio.pause();
+      musicRef.current = null;
+    };
+  }, []);
+
+  const playBackgroundMusic = () => {
+    const audio = musicRef.current;
+    if (!audio) return;
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+  };
+
+  const stopBackgroundMusic = () => {
+    const audio = musicRef.current;
+    if (!audio) return;
+    audio.pause();
+    audio.currentTime = 0;
+  };
+
+  useEffect(() => {
+    if (!isAutoMoving) {
+      stopBackgroundMusic();
+    }
+  }, [isAutoMoving]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -1098,6 +1136,7 @@ export default function ShowroomScene() {
                 controlsRef.current
               );
               setIsAutoMoving(true);
+              playBackgroundMusic();
             }
           }}
         />
