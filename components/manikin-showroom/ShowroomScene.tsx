@@ -18,6 +18,7 @@ import {
   autoAdjustCamera,
   createPoster,
   loadAEDModelOnTable,
+  loadIPadModelOnTable,
   createLogoBanner,
   createGrid,
   createAxesHelper,
@@ -44,6 +45,7 @@ import DeleteZone from "./editor/DeleteZone";
 import ModelSelector from "./editor/ModelSelector";
 import MouseControlGuide from "./camera/MouseControlGuide";
 import Camera360Button from "./action/Camera360Button";
+import IPadModal from "./modal/IPadModal";
 
 export default function ShowroomScene() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -62,6 +64,7 @@ export default function ShowroomScene() {
   const loadingStateRef = useRef({
     manikins: false,
     aedModel: false,
+    ipadModel: false,
     logoBanner: false,
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -104,6 +107,10 @@ export default function ShowroomScene() {
   // 좌표계 표시 상태
   const [showCoordinates, setShowCoordinates] = useState(true);
   const coordinateObjectsRef = useRef<THREE.Object3D[]>([]); // 좌표계 객체들 저장
+
+  // 아이패드 모달 상태
+  const [showIPadModal, setShowIPadModal] = useState(false);
+  const ipadModelRef = useRef<THREE.Object3D | null>(null); // 아이패드 모델 참조
 
   // 박스 모델 선택 패널 열기
   const handleOpenBoxSelector = () => {
@@ -704,6 +711,7 @@ export default function ShowroomScene() {
     loadingStateRef.current = {
       manikins: false,
       aedModel: false,
+      ipadModel: false,
       logoBanner: false,
     };
 
@@ -714,8 +722,8 @@ export default function ShowroomScene() {
     const checkAllLoaded = () => {
       if (initialObjectsLoadedRef.current) return; // 이미 로드되었으면 중복 실행 방지
 
-      const { manikins, aedModel, logoBanner } = loadingStateRef.current;
-      if (manikins && aedModel && logoBanner) {
+      const { manikins, aedModel, ipadModel, logoBanner } = loadingStateRef.current;
+      if (manikins && aedModel && ipadModel && logoBanner) {
         initialObjectsLoadedRef.current = true; // 로드 실행 플래그 설정
 
         // 모든 객체 로딩 완료 - 다음 프레임에 로딩 화면을 숨기도록 약간의 지연 추가 (부드러운 전환)
@@ -919,6 +927,33 @@ export default function ShowroomScene() {
             checkAllLoaded();
           }
         );
+
+        // 아이패드 모델 로드 (AED-T 옆에 배치)
+        // AED-T 위치에서 Z축으로 -3 떨어진 곳에 배치
+        loadIPadModelOnTable(
+          scene,
+          table2PositionX,
+          table2PositionZ + 3, // AED-T 옆 (Z축 음수 방향)
+          table2TopY,
+          (Math.PI / 2) * 3, // AED-T와 같은 회전 각도
+          (ipadPositionX) => {
+            console.log(
+              `iPad model loaded at X: ${ipadPositionX.toFixed(2)}, Z: ${(table2PositionZ - 2).toFixed(2)}`
+            );
+
+            // 아이패드 모델 참조 저장 (클릭 이벤트를 위해)
+            const ipadModel = scene.children.find(
+              child => child.userData.type === 'ipad'
+            );
+            if (ipadModel) {
+              ipadModelRef.current = ipadModel;
+            }
+
+            // 아이패드 모델 로드 완료
+            loadingStateRef.current.ipadModel = true;
+            checkAllLoaded();
+          }
+        );
       },
       (progress) => {
         if (progress.total > 0) {
@@ -977,6 +1012,35 @@ export default function ShowroomScene() {
 
       console.log("UserInteractionManager initialized and setup complete");
     }
+
+    // 아이패드 클릭 이벤트 핸들러
+    const handleIPadClick = (event: MouseEvent) => {
+      // 배치 모드일 때는 무시
+      if (isPlacementModeRef.current) return;
+
+      const rect = renderer.domElement.getBoundingClientRect();
+      const mouse = new THREE.Vector2(
+        ((event.clientX - rect.left) / rect.width) * 2 - 1,
+        -((event.clientY - rect.top) / rect.height) * 2 + 1
+      );
+
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(mouse, camera);
+
+      // 아이패드 모델만 체크
+      if (ipadModelRef.current) {
+        const intersects = raycaster.intersectObject(ipadModelRef.current, true);
+        if (intersects.length > 0) {
+          console.log("iPad clicked!");
+          setShowIPadModal(true);
+        }
+      }
+    };
+
+    // 클릭 이벤트 리스너 등록
+    renderer.domElement.addEventListener('click', handleIPadClick);
+
+    console.log("iPad click event listener registered");
 
     const highlightColorHex = 0x4a9eff;
     const updateGhostPreviewColor = (ghostObject: THREE.Object3D, color: number) => {
@@ -1037,6 +1101,14 @@ export default function ShowroomScene() {
           );
           setIsAutoMoving(false);
         }
+      }
+
+      // 클릭 인디케이터 화살표 애니메이션 (위아래로 움직임)
+      if (ipadModelRef.current && ipadModelRef.current.userData.clickIndicator) {
+        const indicator = ipadModelRef.current.userData.clickIndicator as THREE.Group;
+        const time = Date.now() * 0.002;
+        const offset = indicator.userData.animationOffset || 0;
+        indicator.position.y = ipadModelRef.current.position.y + 1.5 + Math.sin(time + offset) * 0.2;
       }
 
       // 배치 모드일 때 로직 처리
@@ -1116,6 +1188,23 @@ export default function ShowroomScene() {
         interactionManagerRef.current.updateCursor();
       }
 
+      // --- 아이패드 호버 시 커서 변경 ---
+      if (!isPlacementModeRef.current && ipadModelRef.current && cameraRef.current) {
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mouseRef.current, cameraRef.current);
+        const intersects = raycaster.intersectObject(ipadModelRef.current, true);
+
+        if (intersects.length > 0) {
+          renderer.domElement.style.cursor = 'pointer';
+        } else if (!isPlacementModeRef.current && !editingObjectRef.current) {
+          // 다른 객체 위가 아니면 기본 커서로
+          const userObjectIntersects = raycaster.intersectObjects(userAddedObjectsRef.current, true);
+          if (userObjectIntersects.length === 0) {
+            renderer.domElement.style.cursor = 'auto';
+          }
+        }
+      }
+
 
       controls.update();
       renderer.render(scene, camera);
@@ -1140,6 +1229,9 @@ export default function ShowroomScene() {
     return () => {
       console.log("=== Cleaning up Three.js scene ===");
       window.removeEventListener("resize", handleResize);
+
+      // 아이패드 클릭 이벤트 리스너 제거
+      renderer.domElement.removeEventListener('click', handleIPadClick);
 
       // UserInteractionManager cleanup
       if (interactionManagerRef.current) {
@@ -1243,6 +1335,12 @@ export default function ShowroomScene() {
           onDelete={handleDeleteObject}
         />
       )}
+
+      {/* 아이패드 모달 */}
+      <IPadModal
+        isOpen={showIPadModal}
+        onClose={() => setShowIPadModal(false)}
+      />
 
       {/* 로딩 화면 */}
       {isLoading && (
