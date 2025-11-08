@@ -36,7 +36,7 @@ export default function Camera360Button({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          gap: "8px",
+          gap: "10px",
           boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
           backdropFilter: "blur(10px)",
           minWidth: "160px",
@@ -57,25 +57,49 @@ export default function Camera360Button({
           }
         }}
       >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 16 16"
-          fill="currentColor"
-          xmlns="http://www.w3.org/2000/svg"
-        >
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="currentColor"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            {isMoving ? (
+              <>
+                <rect x="3" y="2" width="3" height="12" rx="1" fill="currentColor" />
+                <rect x="8" y="2" width="3" height="12" rx="1" fill="currentColor" />
+              </>
+            ) : (
+              <path d="M3 1.5v13l10-6.5L3 1.5z" fill="currentColor" />
+            )}
+          </svg>
+          {/* <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M9 18V5l10-2v13" />
+            <circle cx="6" cy="18" r="3" />
+            <circle cx="19" cy="16" r="3" />
+          </svg> */}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.2, textAlign: "left" }}>
           {isMoving ? (
-            // Pause icon
-            <>
-              <rect x="3" y="2" width="4" height="12" rx="1" fill="currentColor" />
-              <rect x="9" y="2" width="4" height="12" rx="1" fill="currentColor" />
-            </>
+            <span>무빙 중...</span>
           ) : (
-            // Play icon
-            <path d="M3 1.5v13l10-6.5L3 1.5z" fill="currentColor" />
+            <>
+              <span>BGM과 함께</span>
+              <span style={{ marginTop: "2px" }}>360° 둘러보기</span>
+            </>
           )}
-        </svg>
-        {isMoving ? "무빙 중..." : "360° 둘러보기"}
+        </div>
       </button>
     </div>
   );
