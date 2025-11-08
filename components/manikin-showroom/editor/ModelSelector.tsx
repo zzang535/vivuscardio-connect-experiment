@@ -101,7 +101,9 @@ export default function ModelSelector({
           flex: 1,
         }}
       >
-        {models.map((model) => (
+        {models.map((model) => {
+          const previewDims = model.previewDimensions ?? model.dimensions;
+          return (
           <button
             key={model.id}
             onClick={() => onSelectModel(model)}
@@ -170,12 +172,12 @@ export default function ModelSelector({
                   color: "#ffffff",
                 }}
               >
-                크기: {model.dimensions.width} × {model.dimensions.height} ×{" "}
-                {model.dimensions.depth}
+                크기: {previewDims.width} × {previewDims.height} × {previewDims.depth}
               </div>
             </div>
           </button>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

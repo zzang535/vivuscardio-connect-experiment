@@ -54,10 +54,12 @@ export default function ModelPreview({ model, size = 80 }: ModelPreviewProps) {
   const leftColor = darkenColor({ color: baseHex, percent: 20 });
   const rightColor = darkenColor({ color: baseHex, percent: 40 });
 
+  const previewDims = model.previewDimensions ?? model.dimensions;
+
   const { topPath, leftPath, rightPath } = getIsometricPaths(
-    model.dimensions.width,
-    model.dimensions.height,
-    model.dimensions.depth,
+    previewDims.width,
+    previewDims.height,
+    previewDims.depth,
     100 // Use a 100x100 internal viewbox for calculations
   );
 

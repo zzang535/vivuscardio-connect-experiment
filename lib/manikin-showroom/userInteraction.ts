@@ -9,7 +9,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import React from 'react';
-import { createGhostBox, createPlacementIndicator } from './objectControl';
+import { createGhostBox, createPlacementIndicator, alignObjectToPlacement } from './objectControl';
 import { ModelType } from './modelTypes';
 
 /**
@@ -25,10 +25,10 @@ export interface InteractionContext {
   ground: THREE.Mesh;
 
   // React Refs (실시간 동기화 필요)
-  userAddedObjectsRef: React.MutableRefObject<THREE.Mesh[]>;
+  userAddedObjectsRef: React.MutableRefObject<THREE.Object3D[]>;
   isPlacementModeRef: React.MutableRefObject<boolean>;
   objectToPlaceRef: React.MutableRefObject<THREE.Mesh | null>;
-  editingObjectRef: React.MutableRefObject<THREE.Mesh | null>;
+  editingObjectRef: React.MutableRefObject<THREE.Object3D | null>;
   originalPositionRef: React.MutableRefObject<THREE.Vector3 | null>;
   isPlacementValidRef: React.MutableRefObject<boolean>;
   mouseRef: React.MutableRefObject<THREE.Vector2>;
@@ -42,11 +42,13 @@ export interface InteractionContext {
 export interface InteractionCallbacks {
   setIsPlacementMode: (value: boolean) => void;
   setObjectToPlace: (obj: THREE.Mesh | null) => void;
-  setEditingObject: (obj: THREE.Mesh | null) => void;
+  setEditingObject: (obj: THREE.Object3D | null) => void;
   setOriginalPosition: (pos: THREE.Vector3 | null) => void;
-  setUserAddedObjects: React.Dispatch<React.SetStateAction<THREE.Mesh[]>>;
+  setUserAddedObjects: React.Dispatch<React.SetStateAction<THREE.Object3D[]>>;
   setIsPlacementValid: (valid: boolean) => void;
-  saveObjectsToStorage: (objects: THREE.Mesh[]) => void;
+  saveObjectsToStorage: (objects: THREE.Object3D[]) => void;
+  onObjectPlaced: (modelType: ModelType, position: THREE.Vector3) => void;
+  getModelTemplate?: (modelType: ModelType) => THREE.Object3D | null;
 }
 
 /**
@@ -61,10 +63,10 @@ export class UserInteractionManager {
   private ground: THREE.Mesh;
 
   // React Refs
-  private userAddedObjectsRef: React.MutableRefObject<THREE.Mesh[]>;
+  private userAddedObjectsRef: React.MutableRefObject<THREE.Object3D[]>;
   private isPlacementModeRef: React.MutableRefObject<boolean>;
   private objectToPlaceRef: React.MutableRefObject<THREE.Mesh | null>;
-  private editingObjectRef: React.MutableRefObject<THREE.Mesh | null>;
+  private editingObjectRef: React.MutableRefObject<THREE.Object3D | null>;
   private originalPositionRef: React.MutableRefObject<THREE.Vector3 | null>;
   private isPlacementValidRef: React.MutableRefObject<boolean>;
   private mouseRef: React.MutableRefObject<THREE.Vector2>;
@@ -145,7 +147,13 @@ export class UserInteractionManager {
     this.currentModelType = modelType;
 
     // 고스트 박스 생성
-    const ghostBox = createGhostBox(this.scene, modelType);
+    const template =
+      modelType.type === 'model'
+        ? this.callbacks.getModelTemplate?.(modelType) || null
+        : null;
+    const ghostBox = createGhostBox(this.scene, modelType, {
+      modelTemplate: template,
+    });
     this.callbacks.setObjectToPlace(ghostBox);
     this.callbacks.setIsPlacementMode(true);
 
@@ -155,7 +163,8 @@ export class UserInteractionManager {
     }
     
     // 인디케이터 크기를 모델의 바닥면 크기에 맞게 조절
-    const { width, depth } = modelType.dimensions;
+    const width = modelType.previewDimensions?.width || modelType.dimensions.width;
+    const depth = modelType.previewDimensions?.depth || modelType.dimensions.depth;
     this.placementIndicatorRef.current.scale.set(width, depth, 1);
     this.placementIndicatorRef.current.visible = true;
   }
@@ -164,31 +173,23 @@ export class UserInteractionManager {
    * 편집 모드 진입 (외부에서 호출 가능)
    * @param object 편집할 객체
    */
-  public enterEditMode(object: THREE.Mesh): void {
+  public enterEditMode(object: THREE.Object3D): void {
     console.log('Entering edit mode for object:', object.uuid);
 
     this.callbacks.setEditingObject(object);
     this.callbacks.setOriginalPosition(object.position.clone());
 
-    // 편집할 객체의 크기와 색상을 추출하여 임시 ModelType 생성
-    const geometryParams = (object.geometry as THREE.BoxGeometry).parameters;
-    const materialColor = (object.material as THREE.MeshStandardMaterial).color.getHex();
-    
-    const tempModelType: ModelType = {
-      id: object.uuid,
-      name: 'editing_object',
-      description: '',
-      icon: '',
-      dimensions: {
-        width: geometryParams.width,
-        height: geometryParams.height,
-        depth: geometryParams.depth,
-      },
-      color: materialColor,
-    };
+    const storedModelType = object.userData?.modelType as ModelType | undefined;
+    const ghostModelType = storedModelType ?? this.createFallbackModelType(object);
 
     // 고스트 박스 생성 (기존 객체를 숨기고 고스트로 대체)
-    const ghostBox = createGhostBox(this.scene, tempModelType);
+    const template =
+      ghostModelType.type === 'model'
+        ? this.callbacks.getModelTemplate?.(ghostModelType) || null
+        : null;
+    const ghostBox = createGhostBox(this.scene, ghostModelType, {
+      modelTemplate: template,
+    });
     ghostBox.position.copy(object.position);
     this.callbacks.setObjectToPlace(ghostBox);
     this.callbacks.setIsPlacementMode(true);
@@ -200,8 +201,11 @@ export class UserInteractionManager {
     if (!this.placementIndicatorRef.current) {
       this.placementIndicatorRef.current = createPlacementIndicator(this.scene);
     }
-    const { width, depth } = tempModelType.dimensions;
-    this.placementIndicatorRef.current.scale.set(width, depth, 1);
+    const previewWidth =
+      ghostModelType.previewDimensions?.width || ghostModelType.dimensions.width;
+    const previewDepth =
+      ghostModelType.previewDimensions?.depth || ghostModelType.dimensions.depth;
+    this.placementIndicatorRef.current.scale.set(previewWidth, previewDepth, 1);
     this.placementIndicatorRef.current.visible = true;
   }
 
@@ -213,8 +217,13 @@ export class UserInteractionManager {
 
     // 편집 모드: 기존 객체 위치 업데이트 및 다시 표시
     if (this.editingObjectRef.current && this.objectToPlaceRef.current) {
-      this.editingObjectRef.current.position.copy(this.objectToPlaceRef.current.position);
-      this.editingObjectRef.current.visible = true;
+      const targetPosition = this.objectToPlaceRef.current.position.clone();
+      const editingObject = this.editingObjectRef.current;
+      const modelType = (editingObject.userData?.modelType as ModelType) ||
+        this.createFallbackModelType(editingObject);
+
+      alignObjectToPlacement(editingObject, modelType.dimensions, targetPosition);
+      editingObject.visible = true;
       this.scene.remove(this.objectToPlaceRef.current);
 
       // 편집된 오브젝트 저장
@@ -387,53 +396,18 @@ export class UserInteractionManager {
     if (this.editingObjectRef.current) {
       // 편집 모드: exitEditMode 호출
       this.exitEditMode();
-    } else {
-      // 신규 배치: 고스트 박스를 실제 객체로 변환
-      this.finalizeNewPlacement();
-    }
-  }
-
-  /**
-   * 신규 객체 배치 완료
-   */
-  private finalizeNewPlacement(): void {
-    if (!this.objectToPlaceRef.current) return;
-
-    console.log('UserInteractionManager: Finalizing new placement');
-
-    // 고스트 박스를 실제 객체로 변환
-    const ghostBox = this.objectToPlaceRef.current;
-    const finalBox = ghostBox.clone();
-
-    // 불투명한 재질로 변경 (선택된 모델 타입의 색상 사용)
-    const color = this.currentModelType?.color || 0xcccccc;
-    finalBox.material = new THREE.MeshStandardMaterial({
-      color: color,
-      roughness: 0.8,
-      metalness: 0.2,
-      transparent: false,
-      opacity: 1,
-    });
-
-    this.scene.add(finalBox);
-
-    // 사용자 추가 객체 목록에 추가 및 저장
-    this.callbacks.setUserAddedObjects((prev) => {
-      const updatedObjects = [...prev, finalBox];
-      this.callbacks.saveObjectsToStorage(updatedObjects);
-      return updatedObjects;
-    });
-
-    // 고스트 박스 제거
-    this.scene.remove(ghostBox);
-
-    // 배치 모드 종료
-    this.callbacks.setObjectToPlace(null);
-    this.callbacks.setIsPlacementMode(false);
-    this.currentModelType = null; // 모델 타입 초기화
-
-    if (this.placementIndicatorRef.current) {
-      this.placementIndicatorRef.current.visible = false;
+    } else if (this.currentModelType && this.objectToPlaceRef.current) {
+      // 신규 배치: 외부 콜백 호출
+      this.callbacks.onObjectPlaced(this.currentModelType, this.objectToPlaceRef.current.position);
+      
+      // 배치 후 상태 초기화
+      this.scene.remove(this.objectToPlaceRef.current);
+      this.callbacks.setObjectToPlace(null);
+      this.callbacks.setIsPlacementMode(false);
+      this.currentModelType = null;
+      if (this.placementIndicatorRef.current) {
+        this.placementIndicatorRef.current.visible = false;
+      }
     }
   }
 
@@ -456,26 +430,81 @@ export class UserInteractionManager {
     console.log('normalized mouse:', mouse.x, mouse.y);
     this.raycaster.setFromCamera(mouse, this.camera);
 
-    // scene 전체에서 검색하되 userAddedObjects에 포함된 객체만 선택
     const allIntersects = this.raycaster.intersectObjects(this.scene.children, true);
-
-    // userAddedObjects에 포함된 객체만 필터링
-    const userAddedObjectUuids = new Set(
+    const selectableUuids = new Set(
       this.userAddedObjectsRef.current.map((obj) => obj.uuid)
     );
-    const intersects = allIntersects.filter((intersect) =>
-      userAddedObjectUuids.has(intersect.object.uuid)
-    );
 
-    console.log(`Click detected: ${intersects.length} user objects intersected`);
-
-    if (intersects.length > 0) {
-      console.log('첫 번째 intersect:', intersects[0]);
-      const clickedObject = intersects[0].object as THREE.Mesh;
-      console.log('객체 클릭됨!', clickedObject);
-
-      // 편집 모드 진입
-      this.enterEditMode(clickedObject);
+    let selectedObject: THREE.Object3D | null = null;
+    for (const intersect of allIntersects) {
+      const resolved = this.resolveSelectableObject(
+        intersect.object,
+        selectableUuids
+      );
+      if (resolved) {
+        selectedObject = resolved;
+        break;
+      }
     }
+
+    console.log('Selectable object found:', selectedObject?.uuid ?? 'none');
+
+    if (selectedObject) {
+      this.enterEditMode(selectedObject);
+    }
+  }
+
+  private resolveSelectableObject(
+    object: THREE.Object3D,
+    selectableUuids: Set<string>
+  ): THREE.Object3D | null {
+    let current: THREE.Object3D | null = object;
+    while (current) {
+      if (selectableUuids.has(current.uuid)) {
+        return current;
+      }
+      const rootObject = current.userData?.rootObject as THREE.Object3D | undefined;
+      if (rootObject && selectableUuids.has(rootObject.uuid)) {
+        return rootObject;
+      }
+      current = current.parent as THREE.Object3D | null;
+    }
+    return null;
+  }
+
+  private createFallbackModelType(object: THREE.Object3D): ModelType {
+    const dimensions = this.getObjectDimensions(object);
+    return {
+      id: object.uuid,
+      name: 'editing_object',
+      description: '',
+      type: 'box',
+      icon: '',
+      color: this.getObjectColor(object),
+      dimensions,
+    };
+  }
+
+  private getObjectDimensions(object: THREE.Object3D) {
+    const box = new THREE.Box3().setFromObject(object);
+    const size = box.getSize(new THREE.Vector3());
+    return {
+      width: size.x || 1,
+      height: size.y || 1,
+      depth: size.z || 1,
+    };
+  }
+
+  private getObjectColor(object: THREE.Object3D): number {
+    let detectedColor = 0xffffff;
+    object.traverse((node) => {
+      if (node instanceof THREE.Mesh) {
+        const material = node.material as THREE.MeshStandardMaterial;
+        if (material?.color) {
+          detectedColor = material.color.getHex();
+        }
+      }
+    });
+    return detectedColor;
   }
 }

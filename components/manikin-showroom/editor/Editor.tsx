@@ -2,15 +2,18 @@
 
 import EditorButton from "./EditorButton";
 import BoxIcon from "./BoxIcon";
+import ManikinIcon from "./ManikinIcon";
 
 interface EditorProps {
   onOpenModelSelector: () => void;
+  onOpenManikinSelector: () => void;
   isPlacementMode: boolean;
   hasEditingObject: boolean;
 }
 
 export default function Editor({
   onOpenModelSelector,
+  onOpenManikinSelector,
   isPlacementMode,
   hasEditingObject
 }: EditorProps) {
@@ -34,9 +37,14 @@ export default function Editor({
     >
       {/* 모델 추가 버튼 - 배치 모드가 아닐 때만 표시 */}
       {!isPlacementMode && (
-        <EditorButton onClick={onOpenModelSelector}>
-          <BoxIcon size={48} color="#ffffff" />
-        </EditorButton>
+        <>
+          <EditorButton onClick={onOpenModelSelector}>
+            <BoxIcon size={48} color="#ffffff" />
+          </EditorButton>
+          <EditorButton onClick={onOpenManikinSelector}>
+            <ManikinIcon size={48} color="#ffffff" />
+          </EditorButton>
+        </>
       )}
 
     </div>

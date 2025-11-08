@@ -26,12 +26,12 @@ import {
   completeAutoMove,
 } from "@/lib/manikin-showroom/cameraAnimation";
 import {
-  createGhostBox,
-  createPlacementIndicator,
-  snapToGrid
+  alignObjectToPlacement,
+  snapToGrid,
+  type Dimensions,
 } from "@/lib/manikin-showroom/objectControl";
 import { UserInteractionManager } from "@/lib/manikin-showroom/userInteraction";
-import { AVAILABLE_MODELS, ModelType } from "@/lib/manikin-showroom/modelTypes";
+import { AVAILABLE_MODELS, AVAILABLE_MANIKINS, ModelType } from "@/lib/manikin-showroom/modelTypes";
 import Editor from "./editor/Editor";
 import PlacementModeGuide from "./guide/PlacementModeGuide";
 import DeleteZone from "./editor/DeleteZone";
@@ -46,6 +46,7 @@ export default function ShowroomScene() {
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
   const groundRef = useRef<THREE.Mesh | null>(null);
+  const manikinTemplateRef = useRef<THREE.Object3D | null>(null);
 
   // UserInteractionManager 인스턴스
   const interactionManagerRef = useRef<UserInteractionManager | null>(null);
@@ -57,13 +58,13 @@ export default function ShowroomScene() {
     logoBanner: false,
   });
   const [isLoading, setIsLoading] = useState(true);
-  const [userAddedObjects, setUserAddedObjects] = useState<THREE.Mesh[]>([]);
+  const [userAddedObjects, setUserAddedObjects] = useState<THREE.Object3D[]>([]);
   const [isPlacementMode, setIsPlacementMode] = useState(false);
   const [objectToPlace, setObjectToPlace] = useState<THREE.Mesh | null>(null);
   const placementIndicatorRef = useRef<THREE.Mesh | null>(null);
 
   // 편집 모드 상태 (기존 객체를 이동하는 모드)
-  const [editingObject, setEditingObject] = useState<THREE.Mesh | null>(null);
+  const [editingObject, setEditingObject] = useState<THREE.Object3D | null>(null);
   const [originalPosition, setOriginalPosition] = useState<THREE.Vector3 | null>(null);
 
   // 배치 가능 여부 상태
@@ -78,7 +79,7 @@ export default function ShowroomScene() {
   editingObjectRef.current = editingObject;
   const originalPositionRef = useRef(originalPosition);
   originalPositionRef.current = originalPosition;
-  const userAddedObjectsRef = useRef<THREE.Mesh[]>(userAddedObjects);
+  const userAddedObjectsRef = useRef<THREE.Object3D[]>(userAddedObjects);
   userAddedObjectsRef.current = userAddedObjects;
   const isPlacementValidRef = useRef(isPlacementValid);
   isPlacementValidRef.current = isPlacementValid;
@@ -89,11 +90,19 @@ export default function ShowroomScene() {
   // 마우스 위치를 저장할 ref (Vector2 타입 사용)
   const mouseRef = useRef(new THREE.Vector2());
 
-  // 모델 선택 패널 표시 상태
+  // 모델 선택 패널 관련 상태
   const [showModelSelector, setShowModelSelector] = useState(false);
+  const [modelsToShow, setModelsToShow] = useState<ModelType[]>([]);
 
-  // 모델 선택 패널 열기
-  const handleOpenModelSelector = () => {
+  // 박스 모델 선택 패널 열기
+  const handleOpenBoxSelector = () => {
+    setModelsToShow(AVAILABLE_MODELS);
+    setShowModelSelector(true);
+  };
+
+  // 마네킹 모델 선택 패널 열기
+  const handleOpenManikinSelector = () => {
+    setModelsToShow(AVAILABLE_MANIKINS);
     setShowModelSelector(true);
   };
 
@@ -113,28 +122,158 @@ export default function ShowroomScene() {
     }
   };
 
-  const handleAddBox = () => {
-    if (isPlacementMode) return; // 이미 배치 모드이면 중복 실행 방지
-    if (!sceneRef.current) return;
-
-    setIsPlacementMode(true);
-
-    // 고스트 박스 생성 (유틸리티 함수 사용)
-    const ghostBox = createGhostBox(sceneRef.current);
-    setObjectToPlace(ghostBox);
-
-    // 배치 위치 인디케이터 생성 (한 번만)
-    if (!placementIndicatorRef.current) {
-      placementIndicatorRef.current = createPlacementIndicator(sceneRef.current);
-    }
+  const registerObjectMetadata = (object: THREE.Object3D, modelType: ModelType) => {
+    object.userData.modelType = modelType;
+    object.userData.modelTypeId = modelType.id;
+    object.userData.placementDimensions = modelType.dimensions;
+    object.userData.previewDimensions = modelType.previewDimensions;
+    object.traverse(child => {
+      child.userData.rootObject = object;
+    });
   };
 
+  interface StoredObjectData {
+    id: string;
+    modelTypeId?: string;
+    type: ModelType['type'];
+    color: number;
+    position: number[];
+    rotation: number[];
+    scale: number[];
+    placementDimensions: Dimensions;
+    previewDimensions?: Dimensions;
+  }
+
+  const getObjectColor = (object: THREE.Object3D): number => {
+    let detectedColor = 0xffffff;
+    object.traverse(node => {
+      if (node instanceof THREE.Mesh) {
+        const material = node.material as THREE.MeshStandardMaterial;
+        if (material?.color) {
+          detectedColor = material.color.getHex();
+        }
+      }
+    });
+    return detectedColor;
+  };
+
+  const getObjectDimensions = (object: THREE.Object3D): Dimensions => {
+    const box = new THREE.Box3().setFromObject(object);
+    const size = box.getSize(new THREE.Vector3());
+    return {
+      width: size.x || 1,
+      height: size.y || 1,
+      depth: size.z || 1,
+    };
+  };
+
+  const toVector3Array = (
+    value: number[] | undefined,
+    defaultValue: [number, number, number] = [0, 0, 0]
+  ): [number, number, number] => {
+    const [defaultX, defaultY, defaultZ] = defaultValue;
+    const [x = defaultX, y = defaultY, z = defaultZ] = value ?? [];
+    return [x, y, z];
+  };
+
+  const serializeObjectForStorage = (object: THREE.Object3D): StoredObjectData => {
+    const modelType = object.userData?.modelType as ModelType | undefined;
+    const placementDimensions =
+      (object.userData?.placementDimensions as Dimensions | undefined) ||
+      getObjectDimensions(object);
+    const previewDimensions =
+      object.userData?.previewDimensions as Dimensions | undefined;
+    const type = modelType?.type || 'box';
+
+    return {
+      id: object.uuid,
+      modelTypeId: modelType?.id,
+      type,
+      color: modelType?.color ?? getObjectColor(object),
+      position: object.position.toArray() as [number, number, number],
+      rotation: [object.rotation.x, object.rotation.y, object.rotation.z],
+      scale: object.scale.toArray() as [number, number, number],
+      placementDimensions,
+      previewDimensions,
+    };
+  };
+
+  const resolveModelTypeFromStorage = (data: StoredObjectData): ModelType => {
+    const availableTypes = [...AVAILABLE_MODELS, ...AVAILABLE_MANIKINS];
+    const existing = data.modelTypeId
+      ? availableTypes.find(model => model.id === data.modelTypeId)
+      : undefined;
+
+    const fallbackDimensions =
+      data.placementDimensions || existing?.dimensions || {
+        width: 1,
+        height: 1,
+        depth: 1,
+      };
+
+    return {
+      id: data.modelTypeId || existing?.id || data.id,
+      name: existing?.name || 'Saved Object',
+      description: existing?.description || '',
+      type: data.type || existing?.type || 'box',
+      modelPath:
+        existing?.modelPath ||
+        ((data.type || existing?.type) === 'model'
+          ? CONSTANTS.MANIKIN_MODEL_PATH
+          : undefined),
+      icon:
+        existing?.icon ||
+        ((data.type || existing?.type) === 'model' ? '🧑' : '📦'),
+      color: data.color ?? existing?.color ?? 0xcccccc,
+      dimensions: fallbackDimensions,
+      previewDimensions: data.previewDimensions || existing?.previewDimensions,
+    };
+  };
+
+  // 최종 객체 배치 콜백
+  const handleObjectPlaced = (modelType: ModelType, position: THREE.Vector3) => {
+    if (!sceneRef.current) return;
+
+    let newObject: THREE.Object3D | null = null;
+
+    if (modelType.type === 'box') {
+      const geometry = new THREE.BoxGeometry(
+        modelType.dimensions.width,
+        modelType.dimensions.height,
+        modelType.dimensions.depth
+      );
+      const material = new THREE.MeshStandardMaterial({
+        color: modelType.color,
+        roughness: 0.8,
+        metalness: 0.2,
+      });
+      newObject = new THREE.Mesh(geometry, material);
+    } else if (modelType.type === 'model' && manikinTemplateRef.current) {
+      const material = new THREE.MeshStandardMaterial({
+        color: modelType.color,
+        roughness: CONSTANTS.MANIKIN_MATERIAL.ROUGHNESS,
+        metalness: CONSTANTS.MANIKIN_MATERIAL.METALNESS,
+      });
+      newObject = createManikin(manikinTemplateRef.current, material);
+    }
+
+    if (newObject) {
+      registerObjectMetadata(newObject, modelType);
+      alignObjectToPlacement(newObject, modelType.dimensions, position);
+      sceneRef.current.add(newObject);
+      setUserAddedObjects(prev => {
+        const updated = [...prev, newObject];
+        saveObjectsToStorage(updated);
+        return updated;
+      });
+    }
+  };
+  
   const handleDeleteObject = () => {
     if (!sceneRef.current || !editingObject) return;
 
     // 편집 중인 객체를 삭제
     sceneRef.current.remove(editingObject);
-    setUserAddedObjects(prev => prev.filter(obj => obj !== editingObject));
 
     // 고스트 박스 제거
     if (objectToPlace) {
@@ -165,74 +304,103 @@ export default function ShowroomScene() {
   const autoMoveRef = useRef<AutoMoveState>(createAutoMoveState());
 
   // 오브젝트 저장/로딩 함수들
-  const saveObjectsToStorage = (objects: THREE.Mesh[]) => {
+  const saveObjectsToStorage = (objects: THREE.Object3D[]) => {
     try {
-      const objectsData = objects.map(obj => {
-        const material = obj.material as THREE.MeshStandardMaterial;
-        return {
-          id: obj.uuid,
-          type: 'box', // 현재는 박스만 지원
-          position: obj.position.toArray(),
-          rotation: obj.rotation.toArray(),
-          scale: obj.scale.toArray(),
-          color: material.color ? material.color.getHex() : 0xcccccc,
-          geometry: {
-            width: (obj.geometry as THREE.BoxGeometry).parameters?.width || 2,
-            height: (obj.geometry as THREE.BoxGeometry).parameters?.height || 2,
-            depth: (obj.geometry as THREE.BoxGeometry).parameters?.depth || 2,
-          },
-        };
-      });
+      const objectsData = objects.map(obj => serializeObjectForStorage(obj));
       localStorage.setItem('manikinShowroomObjects', JSON.stringify(objectsData));
     } catch (error) {
       console.error('Failed to save objects:', error);
     }
   };
 
-  const loadObjectsFromStorage = (): THREE.Mesh[] => {
+  const loadObjectsFromStorage = (): THREE.Object3D[] => {
     try {
       const savedData = localStorage.getItem('manikinShowroomObjects');
       if (!savedData || !sceneRef.current) return [];
 
-      const objectsData = JSON.parse(savedData);
-
-      // 이전 버전 데이터 호환성 처리 (geometry, color 정보가 없는 경우)
-      const normalizedObjectsData = objectsData.map((data: any) => ({
-        ...data,
-        color: data.color || 0xcccccc, // 기본 회색
-        geometry: data.geometry || { width: 2, height: 2, depth: 10 }, // 테이블 크기 기본값
-      }));
-
-      const loadedObjects: THREE.Mesh[] = [];
-
-      normalizedObjectsData.forEach((data: any) => {
-        // 박스 오브젝트 재생성 - 저장된 크기와 색상 사용
-        const geometry = new THREE.BoxGeometry(
-          data.geometry?.width || 2,
-          data.geometry?.height || 2,
-          data.geometry?.depth || 2
-        );
-        const material = new THREE.MeshStandardMaterial({
-          color: data.color || 0xcccccc, // 저장된 색상 또는 기본 회색
-          roughness: 0.8,
-          metalness: 0.2,
-          transparent: false,
-          opacity: 1,
-        });
-        const mesh = new THREE.Mesh(geometry, material);
-
-        // 저장된 속성 복원
-        mesh.position.fromArray(data.position);
-        mesh.rotation.fromArray(data.rotation);
-        mesh.scale.fromArray(data.scale);
-        mesh.uuid = data.id;
-
-        // 씬에 추가
-        if (sceneRef.current) {
-          sceneRef.current.add(mesh);
-          console.log('Added mesh to scene:', mesh.uuid, mesh.position);
+      const rawObjectsData: any[] = JSON.parse(savedData);
+      const normalizedData: StoredObjectData[] = rawObjectsData.map((data) => {
+        if (data.placementDimensions) {
+          return data;
         }
-        loadedObjects.push(mesh);
+
+        const geometry = data.geometry || { width: 2, height: 2, depth: 2 };
+        return {
+          id: data.id,
+          modelTypeId: data.modelTypeId,
+          type: data.type || 'box',
+          color: data.color || 0xcccccc,
+          position: data.position || [0, 0, 0],
+          rotation: data.rotation || [0, 0, 0],
+          scale: data.scale || [1, 1, 1],
+          placementDimensions: {
+            width: geometry.width || 2,
+            height: geometry.height || 2,
+            depth: geometry.depth || 2,
+          },
+          previewDimensions: geometry,
+        } as StoredObjectData;
+      });
+
+      const loadedObjects: THREE.Object3D[] = [];
+
+      normalizedData.forEach((data) => {
+        const modelType = resolveModelTypeFromStorage(data);
+        const color = data.color ?? modelType.color;
+        const placementDimensions = data.placementDimensions || modelType.dimensions;
+
+        let restoredObject: THREE.Object3D | null = null;
+        if (modelType.type === 'box') {
+          const geometry = new THREE.BoxGeometry(
+            placementDimensions.width,
+            placementDimensions.height,
+            placementDimensions.depth
+          );
+          const material = new THREE.MeshStandardMaterial({
+            color,
+            roughness: 0.8,
+            metalness: 0.2,
+          });
+          restoredObject = new THREE.Mesh(geometry, material);
+        } else if (modelType.type === 'model') {
+          if (!manikinTemplateRef.current) {
+            console.warn('Manikin template not ready. Skipping stored model', data.id);
+            return;
+          }
+          const material = new THREE.MeshStandardMaterial({
+            color,
+            roughness: CONSTANTS.MANIKIN_MATERIAL.ROUGHNESS,
+            metalness: CONSTANTS.MANIKIN_MATERIAL.METALNESS,
+          });
+          restoredObject = createManikin(manikinTemplateRef.current, material);
+        }
+
+        if (!restoredObject) {
+          console.warn('Failed to recreate object from storage', data.id);
+          return;
+        }
+
+        restoredObject.uuid = data.id;
+
+        const resolvedModelType: ModelType = {
+          ...modelType,
+          color,
+          dimensions: placementDimensions,
+          previewDimensions: data.previewDimensions || modelType.previewDimensions,
+        };
+
+        registerObjectMetadata(restoredObject, resolvedModelType);
+
+        const position = toVector3Array(data.position);
+        const rotation = toVector3Array(data.rotation);
+        const scale = toVector3Array(data.scale, [1, 1, 1]);
+
+        restoredObject.position.set(position[0], position[1], position[2]);
+        restoredObject.rotation.set(rotation[0], rotation[1], rotation[2]);
+        restoredObject.scale.set(scale[0], scale[1], scale[2]);
+
+        sceneRef.current.add(restoredObject);
+        loadedObjects.push(restoredObject);
       });
 
       return loadedObjects;
@@ -526,6 +694,7 @@ export default function ShowroomScene() {
       CONSTANTS.MANIKIN_MODEL_PATH,
       (object) => {
         console.log("=== OBJ file loaded successfully ===");
+        manikinTemplateRef.current = object; // 마네킹 템플릿 저장
 
         // 마네킹을 5개 복제
         const manikins: THREE.Object3D[] = [];
@@ -682,6 +851,13 @@ export default function ShowroomScene() {
           setUserAddedObjects,
           setIsPlacementValid,
           saveObjectsToStorage,
+          onObjectPlaced: handleObjectPlaced, // 콜백 전달
+          getModelTemplate: (modelType: ModelType) => {
+            if (modelType.type === 'model') {
+              return manikinTemplateRef.current;
+            }
+            return null;
+          },
         }
       );
 
@@ -691,8 +867,25 @@ export default function ShowroomScene() {
       console.log("UserInteractionManager initialized and setup complete");
     }
 
+    const highlightColorHex = 0x4a9eff;
+    const updateGhostPreviewColor = (ghostObject: THREE.Object3D, color: number) => {
+      if (!ghostObject) return;
+      ghostObject.traverse(child => {
+        if (!(child instanceof THREE.Mesh)) return;
+        const materialList = Array.isArray(child.material)
+          ? child.material
+          : [child.material];
+        materialList.forEach(material => {
+          const meshMaterial = material as THREE.MeshStandardMaterial;
+          if (!meshMaterial.color) return;
+          if (meshMaterial.color.getHex() === highlightColorHex) return;
+          meshMaterial.color.setHex(color);
+        });
+      });
+    };
+
     // 충돌 감지 헬퍼 함수
-    const checkCollision = (object: THREE.Mesh, objects: THREE.Mesh[]): boolean => {
+    const checkCollision = (object: THREE.Object3D, objects: THREE.Object3D[]): boolean => {
       if (!object) return false;
       const box1 = new THREE.Box3().setFromObject(object);
       // 바운딩 박스를 약간 확장하여 미세한 겹침을 방지
@@ -745,7 +938,7 @@ export default function ShowroomScene() {
         raycaster.setFromCamera(mouseRef.current, cameraRef.current);
 
         const objectsToIntersect = [ground, ...userAddedObjectsRef.current];
-        const intersects = raycaster.intersectObjects(objectsToIntersect, false);
+        const intersects = raycaster.intersectObjects(objectsToIntersect, true);
 
         // Find the first valid surface to place on (ground or top face of an object)
         const validIntersect = intersects.find(
@@ -753,20 +946,26 @@ export default function ShowroomScene() {
         );
 
         if (validIntersect) {
-          if (!(validIntersect.object instanceof THREE.Mesh)) return;
-
-          const { point, object } = validIntersect;
+          const { point } = validIntersect;
+          const intersectedObject = validIntersect.object;
+          const targetObject = (intersectedObject.userData?.rootObject as THREE.Object3D) || intersectedObject;
           const ghostObject = objectToPlaceRef.current;
-          const objectHeight = (ghostObject.geometry as THREE.BoxGeometry).parameters.height;
-          const isGround = object === ground;
+          const placementDimensions = ghostObject.userData?.placementDimensions as
+            | { width: number; height: number; depth: number }
+            | undefined;
+          const objectHeight = placementDimensions?.height ??
+            (ghostObject.geometry as THREE.BoxGeometry).parameters.height;
+          const isGround = targetObject === ground;
+          const targetHeight = isGround
+            ? 0
+            : targetObject.userData?.placementDimensions?.height ??
+              new THREE.Box3().setFromObject(targetObject).getSize(new THREE.Vector3()).y;
 
           // Calculate potential position
           const snappedPoint = snapToGrid(point, 1);
           const newY = isGround
             ? CONSTANTS.GROUND_POSITION.Y + objectHeight / 2
-            : object.position.y +
-              (object.geometry as THREE.BoxGeometry).parameters.height / 2 +
-              objectHeight / 2;
+            : targetObject.position.y + targetHeight / 2 + objectHeight / 2;
           ghostObject.position.set(snappedPoint.x, newY, snappedPoint.z);
 
           // Check for collision at this potential position
@@ -780,20 +979,13 @@ export default function ShowroomScene() {
             snappedPoint.x,
             isGround
               ? CONSTANTS.GROUND_POSITION.Y + 0.02
-              : object.position.y +
-                (object.geometry as THREE.BoxGeometry).parameters.height / 2 +
-                0.01,
+              : targetObject.position.y + targetHeight / 2 + 0.01,
             snappedPoint.z
           );
 
           // Update color based on collision status
           const newColor = isPlacementCurrentlyValid ? 0xffffff : 0xff0000;
-          const materials = ghostObject.material as THREE.MeshStandardMaterial[];
-          materials.forEach(material => {
-            if (material.color.getHex() !== 0x4a9eff) {
-              material.color.setHex(newColor);
-            }
-          });
+          updateGhostPreviewColor(ghostObject, newColor);
         } else {
           // No valid surface under cursor. Hide everything and mark as invalid.
           setIsPlacementValid(false);
@@ -911,7 +1103,8 @@ export default function ShowroomScene() {
       {/* 오브젝트 컨트롤러 (항상 표시) */}
       {!isLoading && (
         <Editor
-          onOpenModelSelector={handleOpenModelSelector}
+          onOpenModelSelector={handleOpenBoxSelector}
+          onOpenManikinSelector={handleOpenManikinSelector}
           isPlacementMode={isPlacementMode}
           hasEditingObject={editingObject !== null}
         />
@@ -920,7 +1113,7 @@ export default function ShowroomScene() {
       {/* 모델 선택 패널 */}
       {!isLoading && showModelSelector && (
         <ModelSelector
-          models={AVAILABLE_MODELS}
+          models={modelsToShow}
           onSelectModel={handleSelectModel}
           onClose={handleCloseModelSelector}
         />
