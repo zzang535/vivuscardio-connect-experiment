@@ -3,19 +3,24 @@
 import EditorButton from "./EditorButton";
 import BoxIcon from "./BoxIcon";
 import ManikinIcon from "./ManikinIcon";
+import CoordinateIcon from "./CoordinateIcon";
 
 interface EditorProps {
   onOpenModelSelector: () => void;
   onOpenManikinSelector: () => void;
   isPlacementMode: boolean;
   hasEditingObject: boolean;
+  showCoordinates: boolean;
+  onToggleCoordinates: () => void;
 }
 
 export default function Editor({
   onOpenModelSelector,
   onOpenManikinSelector,
   isPlacementMode,
-  hasEditingObject
+  hasEditingObject,
+  showCoordinates,
+  onToggleCoordinates
 }: EditorProps) {
   return (
     <div
@@ -43,6 +48,16 @@ export default function Editor({
           </EditorButton>
           <EditorButton onClick={onOpenManikinSelector}>
             <ManikinIcon size={48} color="#ffffff" />
+          </EditorButton>
+          {/* 좌표계 토글 버튼 */}
+          <EditorButton
+            onClick={onToggleCoordinates}
+            style={{
+              backgroundColor: showCoordinates ? 'rgba(68, 255, 68, 0.2)' : undefined,
+              border: showCoordinates ? '2px solid rgba(68, 255, 68, 0.5)' : undefined,
+            }}
+          >
+            <CoordinateIcon size={48} color="#ffffff" />
           </EditorButton>
         </>
       )}

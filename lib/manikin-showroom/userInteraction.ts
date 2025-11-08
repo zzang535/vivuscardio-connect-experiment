@@ -295,7 +295,7 @@ export class UserInteractionManager {
       this.raycaster.setFromCamera(this.mouseRef.current, this.camera);
       const intersects = this.raycaster.intersectObjects(
         this.userAddedObjectsRef.current,
-        false
+        true // 자식 객체도 포함 (마네킹의 경우 여러 메쉬로 구성됨)
       );
 
       // 3.1. 잡을 수 있는 객체 위에 마우스가 있을 때: 'grab'

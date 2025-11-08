@@ -99,6 +99,10 @@ export default function ShowroomScene() {
   const [showModelSelector, setShowModelSelector] = useState(false);
   const [modelsToShow, setModelsToShow] = useState<ModelType[]>([]);
 
+  // 좌표계 표시 상태
+  const [showCoordinates, setShowCoordinates] = useState(false);
+  const coordinateObjectsRef = useRef<THREE.Object3D[]>([]); // 좌표계 객체들 저장
+
   // 박스 모델 선택 패널 열기
   const handleOpenBoxSelector = () => {
     setModelsToShow(AVAILABLE_MODELS);
@@ -125,6 +129,11 @@ export default function ShowroomScene() {
     if (interactionManagerRef.current) {
       interactionManagerRef.current.startPlacementMode(modelType);
     }
+  };
+
+  // 좌표계 토글 처리
+  const handleToggleCoordinates = () => {
+    setShowCoordinates(prev => !prev);
   };
 
   const registerObjectMetadata = (object: THREE.Object3D, modelType: ModelType) => {
@@ -452,6 +461,14 @@ export default function ShowroomScene() {
     }
   }, [isAutoMoving]);
 
+  // 좌표계 표시/숨김 처리
+  useEffect(() => {
+    coordinateObjectsRef.current.forEach(obj => {
+      obj.visible = showCoordinates;
+    });
+    console.log(`Coordinates ${showCoordinates ? 'shown' : 'hidden'}`);
+  }, [showCoordinates]);
+
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -630,9 +647,13 @@ export default function ShowroomScene() {
     scene.add(grid);
     console.log("Grid created on the ground");
 
-    // 좌표 라벨 생성 (5 단위로 표시)
-    createCoordinateLabels(scene, CONSTANTS.GROUND_SIZE.WIDTH, 5);
-    console.log("Coordinate labels created on the ground");
+    // 좌표 라벨 생성 (5 단위로 표시) - 처음에는 숨김
+    const coordinateLabels = createCoordinateLabels(scene, CONSTANTS.GROUND_SIZE.WIDTH, 5);
+    coordinateLabels.forEach(label => {
+      label.visible = false; // 초기에는 숨김
+    });
+    coordinateObjectsRef.current = [grid, ...coordinateLabels]; // 그리드와 라벨 모두 저장
+    console.log("Coordinate labels created on the ground (initially hidden)");
 
     // 모든 객체 로딩 상태 초기화
     loadingStateRef.current = {
@@ -1153,6 +1174,8 @@ export default function ShowroomScene() {
           onOpenManikinSelector={handleOpenManikinSelector}
           isPlacementMode={isPlacementMode}
           hasEditingObject={editingObject !== null}
+          showCoordinates={showCoordinates}
+          onToggleCoordinates={handleToggleCoordinates}
         />
       )}
 

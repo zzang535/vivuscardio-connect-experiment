@@ -646,14 +646,16 @@ function createCoordinateLabelTexture(text: string): THREE.CanvasTexture {
  * @param scene Three.js Scene 객체
  * @param size 그리드 전체 크기
  * @param step 라벨 표시 간격
+ * @returns 생성된 좌표 라벨 객체 배열
  */
 export function createCoordinateLabels(
   scene: THREE.Scene,
   size: number,
   step: number = 5
-): void {
+): THREE.Object3D[] {
   const halfSize = size / 2;
   const labelHeight = CONSTANTS.GROUND_POSITION.Y + 0.02;
+  const labels: THREE.Object3D[] = [];
 
   // X축과 Z축의 좌표 생성
   for (let x = -halfSize; x <= halfSize; x += step) {
@@ -675,9 +677,11 @@ export function createCoordinateLabels(
         label.rotation.x = -Math.PI / 2; // 바닥에 평평하게
 
         scene.add(label);
+        labels.push(label);
       }
     }
   }
 
   console.log(`Created coordinate labels with step: ${step}`);
+  return labels;
 }
