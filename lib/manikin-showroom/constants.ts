@@ -1,4 +1,5 @@
 import { MANIKIN_MODEL_PATH } from './assets';
+import { MANIKIN_INFO } from './texts';
 
 /**
  * Manikin Showroom 3D Viewer 설정
@@ -393,32 +394,6 @@ export const POSTER_STYLE = {
    */
   HEIGHT_OFFSET: -0.7,
 } as const;
-
-/**
- * 마네킹 정보 (모델 이름과 설명)
- */
-export const MANIKIN_INFO = [
-  {
-    name: "IM16-R",
-    description: "Adult CPR Training Manikin\nHigh-quality materials\nRealistic anatomy",
-  },
-  {
-    name: "IM16-JHS",
-    description: "Junior High School Manikin\nPerfect for training\nDurable construction",
-  },
-  {
-    name: "IM16-RO",
-    description: "Infant CPR Manikin\nLife-like features\nEasy to use",
-  },
-  {
-    name: "IM17-P",
-    description: "Professional Training Model\nAdvanced features\nIndustry standard",
-  },
-  {
-    name: "Brayden Pro",
-    description: "Professional CPR Manikin\nPremium quality\nComprehensive training",
-  },
-] as const;
 
 // ============================================
 // 지면 설정
