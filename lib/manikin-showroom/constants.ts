@@ -239,7 +239,7 @@ export const MANIKIN_MATERIAL = {
 /**
  * OBJ 파일 경로
  */
-export const MODEL_PATH = "/manikin-showroom/manikin.obj";
+export const MANIKIN_MODEL_PATH = "/manikin-showroom/manikin.obj";
 
 /**
  * 모델 자동 카메라 조정 설정

@@ -250,6 +250,26 @@ export function createManikinMaterial(): THREE.MeshStandardMaterial {
 }
 
 /**
+ * 단일 마네킹 객체 생성
+ * @param template 원본 마네킹 3D 객체
+ * @param material 적용할 재질
+ * @returns 생성된 마네킹 3D 객체
+ */
+export function createManikin(template: THREE.Object3D, material: THREE.Material): THREE.Object3D {
+  const manikin = template.clone();
+
+  manikin.traverse((node) => {
+    if (node instanceof THREE.Mesh) {
+      node.material = material;
+      node.castShadow = true;
+      node.receiveShadow = true;
+    }
+  });
+
+  return manikin;
+}
+
+/**
  * 마네킹을 테이블 위에 배치
  * @param manikin 마네킹 Object3D
  * @param xPosition X축 위치 (기본값: 0, 중앙)

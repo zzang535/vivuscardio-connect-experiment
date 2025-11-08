@@ -10,6 +10,7 @@ import {
   createTable,
   setupLights,
   createManikinMaterial,
+  createManikin,
   positionMultipleManikinsOnTable,
   autoAdjustCamera,
   createPoster,
@@ -522,7 +523,7 @@ export default function ShowroomScene() {
     const manikinMaterial = createManikinMaterial();
 
     loader.load(
-      CONSTANTS.MODEL_PATH,
+      CONSTANTS.MANIKIN_MODEL_PATH,
       (object) => {
         console.log("=== OBJ file loaded successfully ===");
 
@@ -531,19 +532,7 @@ export default function ShowroomScene() {
         const MANIKIN_COUNT = 5;
 
         for (let i = 0; i < MANIKIN_COUNT; i++) {
-          const manikin = object.clone();
-
-          // 재질 및 그림자 설정
-          let meshCount = 0;
-          manikin.traverse((node) => {
-            if (node instanceof THREE.Mesh) {
-              node.material = manikinMaterial;
-              node.castShadow = true;
-              node.receiveShadow = true;
-              meshCount++;
-            }
-          });
-
+          const manikin = createManikin(object, manikinMaterial);
           manikins.push(manikin);
           scene.add(manikin);
         }
