@@ -232,7 +232,8 @@ export default function ShowroomScene() {
 
   // 최종 객체 배치 콜백
   const handleObjectPlaced = (modelType: ModelType, position: THREE.Vector3) => {
-    if (!sceneRef.current) return;
+    const scene = sceneRef.current;
+    if (!scene) return;
 
     let newObject: THREE.Object3D | null = null;
 
@@ -260,7 +261,7 @@ export default function ShowroomScene() {
     if (newObject) {
       registerObjectMetadata(newObject, modelType);
       alignObjectToPlacement(newObject, modelType.dimensions, position);
-      sceneRef.current.add(newObject);
+      scene.add(newObject);
       setUserAddedObjects(prev => {
         const updated = [...prev, newObject];
         saveObjectsToStorage(updated);
@@ -270,14 +271,15 @@ export default function ShowroomScene() {
   };
   
   const handleDeleteObject = () => {
-    if (!sceneRef.current || !editingObject) return;
+    const scene = sceneRef.current;
+    if (!scene || !editingObject) return;
 
     // 편집 중인 객체를 삭제
-    sceneRef.current.remove(editingObject);
+    scene.remove(editingObject);
 
     // 고스트 박스 제거
     if (objectToPlace) {
-      sceneRef.current.remove(objectToPlace);
+      scene.remove(objectToPlace);
     }
 
     // 배치 인디케이터 숨김
@@ -316,7 +318,8 @@ export default function ShowroomScene() {
   const loadObjectsFromStorage = (): THREE.Object3D[] => {
     try {
       const savedData = localStorage.getItem('manikinShowroomObjects');
-      if (!savedData || !sceneRef.current) return [];
+      const scene = sceneRef.current;
+      if (!savedData || !scene) return [];
 
       const rawObjectsData: any[] = JSON.parse(savedData);
       const normalizedData: StoredObjectData[] = rawObjectsData.map((data) => {
@@ -399,7 +402,7 @@ export default function ShowroomScene() {
         restoredObject.rotation.set(rotation[0], rotation[1], rotation[2]);
         restoredObject.scale.set(scale[0], scale[1], scale[2]);
 
-        sceneRef.current.add(restoredObject);
+        scene.add(restoredObject);
         loadedObjects.push(restoredObject);
       });
 
