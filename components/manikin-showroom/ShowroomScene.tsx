@@ -415,9 +415,8 @@ export default function ShowroomScene() {
   };
 
   useEffect(() => {
-    // Pixabay (CC0) track: https://pixabay.com/music/corporate-adventure-begins-14872/
     const backgroundAudio = new Audio(
-      "https://cdn.pixabay.com/download/audio/2022/03/01/audio_8f8c084e5675.mp3?filename=adventure-begins-14872.mp3"
+      "/manikin-showroom/power-sport-extreme-trailer-123405.mp3"
     );
     backgroundAudio.loop = true;
     backgroundAudio.volume = 0.35;
