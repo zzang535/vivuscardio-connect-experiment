@@ -271,7 +271,7 @@ export default function Manikin({
       {/* 마네킹 이미지 컨테이너 */}
       <div className="relative" style={{ width: `${width}px`, height: `${height}px` }}>
         <Image
-          src="/training-simulator/manikin.jpg"
+          src="/manikin-showroom/manikin-transparent.png"
           alt="CPR 마네킹"
           width={width}
           height={height}

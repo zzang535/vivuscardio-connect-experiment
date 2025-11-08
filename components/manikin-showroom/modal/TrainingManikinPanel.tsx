@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import Manikin from "./Manikin";
-import ManikinGuide from "./ManikinGuide";
+import Manikin from "@/components/training-simulator/Manikin";
+import ManikinGuide from "@/components/training-simulator/ManikinGuide";
 import { LAYOUT_SETTINGS } from "@/lib/training-simulator/constants";
 
 interface TrainingManikinPanelProps {
@@ -47,12 +47,8 @@ export default function TrainingManikinPanel({
   }, []);
 
   return (
-    <div className="w-full h-full bg-white flex flex-col items-center justify-center p-8">
+    <div className="w-full h-full bg-transparent flex flex-col items-center justify-center p-8">
       <div className="flex flex-col items-center">
-        <motion.div
-          layoutId="manikin-container"
-          transition={{ duration: 0.8, ease: [0.43, 0.13, 0.23, 0.96] }}
-        >
           <Manikin
             onPositionChange={onPositionChange}
             onPressStateChange={onPressStateChange}
@@ -65,8 +61,6 @@ export default function TrainingManikinPanel({
             size={manikinSize}
             disabled={disabled}
           />
-        </motion.div>
-        <ManikinGuide />
       </div>
     </div>
   );

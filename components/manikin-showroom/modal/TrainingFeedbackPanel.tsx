@@ -2,9 +2,9 @@
 
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import TrainingPrompt from "./TrainingPrompt";
-import TrainingCycleCounter from "./TrainingCycleCounter";
-import TrainingGauges from "./TrainingGauges";
+import TrainingPrompt from "@/components/training-simulator/TrainingPrompt";
+import TrainingCycleCounter from "@/components/training-simulator/TrainingCycleCounter";
+import TrainingGauges from "@/components/training-simulator/TrainingGauges";
 
 interface CompressionResult {
   timestamp: number;

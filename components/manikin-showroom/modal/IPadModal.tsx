@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import TrainingFeedbackPanel from "@/components/training-simulator/TrainingFeedbackPanel";
-import TrainingManikinPanel from "@/components/training-simulator/TrainingManikinPanel";
+import TrainingFeedbackPanel from "@/components/manikin-showroom/modal/TrainingFeedbackPanel";
+import TrainingManikinPanel from "@/components/manikin-showroom/modal/TrainingManikinPanel";
 
 interface CompressionData {
   position: { x: number; y: number };
@@ -124,8 +124,8 @@ export default function IPadModal({ isOpen, onClose }: IPadModalProps) {
       const leftHeight = leftWidth / 1.6; // 약 833px
 
       // 오른쪽 모달: 화면 높이의 90%에 맞춤
-      const rightHeight = viewportHeight * 0.9;
-      const rightWidth = viewportHeight * 0.42;
+      const rightHeight = 700;
+      const rightWidth = 350;
 
       setLeftModalSize({ width: leftWidth, height: leftHeight });
       setRightModalSize({ width: rightWidth, height: rightHeight });
@@ -195,7 +195,7 @@ export default function IPadModal({ isOpen, onClose }: IPadModalProps) {
 
       {/* 오른쪽 모달: 마네킹 */}
       <div
-        className="relative bg-white rounded-lg shadow-2xl overflow-hidden"
+        className="relative rounded-lg overflow-hidden"
         style={{
           width: `${rightModalSize.width}px`,
           height: `${rightModalSize.height}px`,
@@ -205,12 +205,12 @@ export default function IPadModal({ isOpen, onClose }: IPadModalProps) {
         {/* 닫기 버튼 */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-[10001] w-10 h-10 flex items-center justify-center bg-gray-800 hover:bg-gray-700 text-white rounded-full transition-colors"
+          className="absolute top-0 right-0 z-[10001] flex items-center justify-center gap-1 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-full transition-colors"
           aria-label="Close modal"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
+            className="h-5 w-5"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -222,6 +222,7 @@ export default function IPadModal({ isOpen, onClose }: IPadModalProps) {
               d="M6 18L18 6M6 6l12 12"
             />
           </svg>
+          <span>닫기</span>
         </button>
 
         <TrainingManikinPanel
