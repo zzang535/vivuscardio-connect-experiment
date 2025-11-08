@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import * as CONSTANTS from "@/lib/manikin-showroom/constants";
+import { CAMERA_TOUR_MUSIC_PATH } from "@/lib/manikin-showroom/assets";
 import {
   createGround,
   createTable,
@@ -415,9 +416,7 @@ export default function ShowroomScene() {
   };
 
   useEffect(() => {
-    const backgroundAudio = new Audio(
-      "/manikin-showroom/power-sport-extreme-trailer-123405.mp3"
-    );
+    const backgroundAudio = new Audio(CAMERA_TOUR_MUSIC_PATH);
     backgroundAudio.loop = true;
     backgroundAudio.volume = 0.35;
     backgroundAudio.preload = "auto";

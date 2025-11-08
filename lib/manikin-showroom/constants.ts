@@ -1,3 +1,5 @@
+import { MANIKIN_MODEL_PATH } from './assets';
+
 /**
  * Manikin Showroom 3D Viewer 설정
  */
@@ -236,10 +238,6 @@ export const MANIKIN_MATERIAL = {
 // 모델 로딩 설정
 // ============================================
 
-/**
- * OBJ 파일 경로
- */
-export const MANIKIN_MODEL_PATH = "/manikin-showroom/manikin.obj";
 
 /**
  * 모델 자동 카메라 조정 설정
