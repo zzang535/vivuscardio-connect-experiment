@@ -1125,7 +1125,7 @@ export default function ShowroomScene() {
       {!isLoading && <MouseControlGuide />}
 
       {/* 360도 둘러보기 버튼 - 우측 하단 */}
-      {!isLoading && (
+      {!isLoading && !isPlacementMode && (
         <Camera360Button
           isMoving={isAutoMoving}
           onClick={() => {
