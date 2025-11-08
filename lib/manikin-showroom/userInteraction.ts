@@ -149,10 +149,14 @@ export class UserInteractionManager {
     this.callbacks.setObjectToPlace(ghostBox);
     this.callbacks.setIsPlacementMode(true);
 
-    // 배치 위치 인디케이터 생성
+    // 배치 위치 인디케이터 생성 또는 크기 조절
     if (!this.placementIndicatorRef.current) {
       this.placementIndicatorRef.current = createPlacementIndicator(this.scene);
     }
+    
+    // 인디케이터 크기를 모델의 바닥면 크기에 맞게 조절
+    const { width, depth } = modelType.dimensions;
+    this.placementIndicatorRef.current.scale.set(width, depth, 1);
     this.placementIndicatorRef.current.visible = true;
   }
 
@@ -166,9 +170,25 @@ export class UserInteractionManager {
     this.callbacks.setEditingObject(object);
     this.callbacks.setOriginalPosition(object.position.clone());
 
+    // 편집할 객체의 크기와 색상을 추출하여 임시 ModelType 생성
+    const geometryParams = (object.geometry as THREE.BoxGeometry).parameters;
+    const materialColor = (object.material as THREE.MeshStandardMaterial).color.getHex();
+    
+    const tempModelType: ModelType = {
+      id: object.uuid,
+      name: 'editing_object',
+      description: '',
+      icon: '',
+      dimensions: {
+        width: geometryParams.width,
+        height: geometryParams.height,
+        depth: geometryParams.depth,
+      },
+      color: materialColor,
+    };
+
     // 고스트 박스 생성 (기존 객체를 숨기고 고스트로 대체)
-    // 편집 모드에서는 모델 타입 없이 기본 크기 사용
-    const ghostBox = createGhostBox(this.scene);
+    const ghostBox = createGhostBox(this.scene, tempModelType);
     ghostBox.position.copy(object.position);
     this.callbacks.setObjectToPlace(ghostBox);
     this.callbacks.setIsPlacementMode(true);
@@ -176,10 +196,12 @@ export class UserInteractionManager {
     // 원본 객체 숨김
     object.visible = false;
 
-    // 인디케이터 표시
+    // 인디케이터 표시 및 크기 조절
     if (!this.placementIndicatorRef.current) {
       this.placementIndicatorRef.current = createPlacementIndicator(this.scene);
     }
+    const { width, depth } = tempModelType.dimensions;
+    this.placementIndicatorRef.current.scale.set(width, depth, 1);
     this.placementIndicatorRef.current.visible = true;
   }
 

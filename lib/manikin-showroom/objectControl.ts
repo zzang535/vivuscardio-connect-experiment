@@ -23,12 +23,15 @@ export function createGhostBox(scene: THREE.Scene, modelType?: ModelType): THREE
     dimensions.depth
   );
 
+  // 모델 타입이 있으면 해당 색상 사용, 없으면 기본 흰색
+  const ghostColor = modelType ? modelType.color : 0xffffff;
+
   // 각 면마다 다른 재질 적용 (바닥면만 하늘색)
   // Three.js 박스 면 순서: [right, left, top, bottom, front, back]
   const materials = [
     // Right (오른쪽)
     new THREE.MeshStandardMaterial({
-      color: 0xffffff,
+      color: ghostColor,
       opacity: 0.5,
       transparent: true,
       roughness: 0.8,
@@ -36,7 +39,7 @@ export function createGhostBox(scene: THREE.Scene, modelType?: ModelType): THREE
     }),
     // Left (왼쪽)
     new THREE.MeshStandardMaterial({
-      color: 0xffffff,
+      color: ghostColor,
       opacity: 0.5,
       transparent: true,
       roughness: 0.8,
@@ -44,7 +47,7 @@ export function createGhostBox(scene: THREE.Scene, modelType?: ModelType): THREE
     }),
     // Top (윗면)
     new THREE.MeshStandardMaterial({
-      color: 0xffffff,
+      color: ghostColor,
       opacity: 0.5,
       transparent: true,
       roughness: 0.8,
@@ -60,7 +63,7 @@ export function createGhostBox(scene: THREE.Scene, modelType?: ModelType): THREE
     }),
     // Front (앞면)
     new THREE.MeshStandardMaterial({
-      color: 0xffffff,
+      color: ghostColor,
       opacity: 0.5,
       transparent: true,
       roughness: 0.8,
@@ -68,7 +71,7 @@ export function createGhostBox(scene: THREE.Scene, modelType?: ModelType): THREE
     }),
     // Back (뒷면)
     new THREE.MeshStandardMaterial({
-      color: 0xffffff,
+      color: ghostColor,
       opacity: 0.5,
       transparent: true,
       roughness: 0.8,
@@ -91,11 +94,8 @@ export function createGhostBox(scene: THREE.Scene, modelType?: ModelType): THREE
  * @returns 생성된 인디케이터 메쉬
  */
 export function createPlacementIndicator(scene: THREE.Scene): THREE.Mesh {
-  // 박스 크기와 동일하게 설정 (2x2)
-  const indicatorGeometry = new THREE.PlaneGeometry(
-    CONSTANTS.TABLE_SIZE.DEPTH, // width (박스와 동일)
-    CONSTANTS.TABLE_SIZE.DEPTH  // height (박스와 동일)
-  );
+  // 1x1 단위 크기로 생성. 실제 크기는 scale로 조절.
+  const indicatorGeometry = new THREE.PlaneGeometry(1, 1);
   const indicatorMaterial = new THREE.MeshBasicMaterial({
     color: 0x4A9EFF,
     side: THREE.DoubleSide,

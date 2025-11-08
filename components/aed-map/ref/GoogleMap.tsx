@@ -8,7 +8,7 @@ import React, {
     forwardRef,
 } from 'react';
 import { createCurrentLocationDiv, calculateDistance } from '@/lib/aed-map/methods';
-import { darkenColor } from '@/lib/aed-map/tinycolor';
+import { darkenColor } from '@/lib/common/tinycolor';
 import { Playspot, Spot, Position } from '@/lib/aed-map/types';
 
 const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAP_API_KEY || '';
