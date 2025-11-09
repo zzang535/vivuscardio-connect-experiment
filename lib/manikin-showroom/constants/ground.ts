@@ -18,17 +18,6 @@ export const GROUND_SIZE = {
 } as const;
 
 /**
- * 지면 위치
- */
-export const GROUND_POSITION = {
-  /**
-   * 지면의 Y 위치 (높이)
-   * - 테이블보다 약간 낮게 설정
-   */
-  Y: -0.5,
-} as const;
-
-/**
  * 지면 재질 설정
  */
 export const GROUND_MATERIAL = {

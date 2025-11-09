@@ -160,7 +160,7 @@ export function createGround(): THREE.Mesh {
 
   const ground = new THREE.Mesh(geometry, material);
   ground.rotation.x = -Math.PI / 2; // X축을 90도 회전하여 수평면으로 만듦
-  ground.position.set(0, CONSTANTS.GROUND_POSITION.Y, 0);
+  ground.position.set(0, 0, 0);
   ground.receiveShadow = true; // 그림자만 받음 (그림자를 투사하지 않음)
 
   return ground;
@@ -601,7 +601,7 @@ export function loadIPadModelOnTable(
  */
 export function createGrid(size: number, divisions: number): THREE.GridHelper {
   const gridHelper = new THREE.GridHelper(size, divisions);
-  gridHelper.position.y = CONSTANTS.GROUND_POSITION.Y + 0.01; // 지면보다 살짝 위에 위치
+  gridHelper.position.y = 0 + 0.01; // 지면보다 살짝 위에 위치
   gridHelper.material.opacity = 0.25;
   gridHelper.material.transparent = true;
   return gridHelper;
@@ -614,7 +614,7 @@ export function createGrid(size: number, divisions: number): THREE.GridHelper {
  */
 export function createAxesHelper(size: number): THREE.AxesHelper {
   const axesHelper = new THREE.AxesHelper(size);
-  axesHelper.position.y = CONSTANTS.GROUND_POSITION.Y + 0.01; // 지면보다 살짝 위에 위치
+  axesHelper.position.y = 0 + 0.01; // 지면보다 살짝 위에 위치
   return axesHelper;
 }
 
@@ -697,7 +697,7 @@ export function createCoordinateLabels(
   step: number = 5
 ): THREE.Object3D[] {
   const halfSize = size / 2;
-  const labelHeight = CONSTANTS.GROUND_POSITION.Y + 0.02;
+  const labelHeight = 0 + 0.02;
   const labels: THREE.Object3D[] = [];
 
   // X축과 Z축의 좌표 생성

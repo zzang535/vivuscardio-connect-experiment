@@ -564,7 +564,7 @@ export default function ShowroomScene() {
     // --- UserInteractionManager 초기화 ---
     // ground가 생성된 후에 초기화해야 하므로 나중에 초기화
     const raycaster = new THREE.Raycaster();
-    const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -CONSTANTS.GROUND_POSITION.Y);
+    const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -0);
 
     // 조명 설정
     setupLights(scene);
@@ -1012,7 +1012,7 @@ export default function ShowroomScene() {
           // Calculate potential position
           const snappedPoint = snapToGrid(point, 1);
           const newY = isGround
-            ? CONSTANTS.GROUND_POSITION.Y + objectHeight / 2
+            ? 0 + objectHeight / 2
             : targetObject.position.y + targetHeight / 2 + objectHeight / 2;
           ghostObject.position.set(snappedPoint.x, newY, snappedPoint.z);
 
@@ -1026,7 +1026,7 @@ export default function ShowroomScene() {
           placementIndicatorRef.current.position.set(
             snappedPoint.x,
             isGround
-              ? CONSTANTS.GROUND_POSITION.Y + 0.02
+              ? 0 + 0.02
               : targetObject.position.y + targetHeight / 2 + 0.01,
             snappedPoint.z
           );

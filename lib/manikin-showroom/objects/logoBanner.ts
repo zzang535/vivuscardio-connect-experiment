@@ -61,7 +61,7 @@ export function createLogoBanner(
       });
       const stand = new THREE.Mesh(standGeometry, standMaterial);
 
-      const groundY = CONSTANTS.GROUND_POSITION.Y;
+      const groundY = 0;
       const standY = groundY + standHeight / 2;
       stand.position.set(positionX, standY, positionZ);
 

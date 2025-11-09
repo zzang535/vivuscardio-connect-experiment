@@ -10,15 +10,15 @@ export const MANIKIN_BOX_OFFSET = 0.05;
 export const BACKGROUND_TABLES = {
   MAIN: {
     id: "table-main",
-    dimensions: { width: 13, height: 2, depth: 2 },
+    dimensions: { width: 12, height: 2, depth: 2 },
     position: { x: 0, y: 0, z: 0 },
     rotationY: 0,
     color: 0x8b7355,
   },
   SECONDARY: {
     id: "table-secondary",
-    dimensions: { width: 13, height: 2, depth: 2 },
-    position: { x: 7.25, y: 0, z: 5.5 },
+    dimensions: { width: 12, height: 2, depth: 2 },
+    position: { x: 7, y: 0, z: 5 },
     rotationY: Math.PI / 2,
     color: 0xb01a1a,
   },

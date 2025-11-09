@@ -141,7 +141,7 @@ export function createPlacementIndicator(scene: THREE.Scene): THREE.Mesh {
   });
   const indicator = new THREE.Mesh(indicatorGeometry, indicatorMaterial);
   indicator.rotation.x = -Math.PI / 2; // 바닥과 평행하게
-  indicator.position.y = CONSTANTS.GROUND_POSITION.Y + 0.02; // 그리드보다 살짝 위에
+  indicator.position.y = 0 + 0.02; // 그리드보다 살짝 위에
   scene.add(indicator);
   return indicator;
 }
@@ -194,7 +194,7 @@ export function placeObjectOnGrid(
   const snappedPosition = snapToGrid(position, gridSize);
   object.position.set(
     snappedPosition.x,
-    CONSTANTS.GROUND_POSITION.Y + DEFAULT_BOX_HEIGHT / 2,
+    0 + DEFAULT_BOX_HEIGHT / 2,
     snappedPosition.z
   );
 }

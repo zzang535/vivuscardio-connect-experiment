@@ -5,9 +5,6 @@ export * from "./camera";
 export * from "./ground";
 export * from "./backgroundObjects";
 
-
-
-
 // ============================================
 // 조명 설정
 // ============================================
