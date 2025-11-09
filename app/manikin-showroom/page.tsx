@@ -19,7 +19,11 @@ export default function ManikinShowroomPage() {
   const showError = touched && name.trim().length === 0;
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-950 px-4">
+    <div className="flex min-h-screen items-center justify-center px-4"
+    style={{
+      backgroundColor: "rgba(15, 15, 15, 0.92)",
+    }}
+    >
       <div className="w-full max-w-md space-y-8 rounded-2xl border border-white/10 bg-white/5 p-8 shadow-xl backdrop-blur">
         <div>
           <p className="text-sm uppercase tracking-[0.3em] text-blue-300">VivusCardio</p>

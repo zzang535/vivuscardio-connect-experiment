@@ -24,9 +24,11 @@ export default function ManikinShowroomWithNamePage() {
   const [bannerError, setBannerError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [reloadFlag, setReloadFlag] = useState(0);
+  const [isSceneReady, setIsSceneReady] = useState(false);
 
   useEffect(() => {
     let active = true;
+    setIsSceneReady(false);
 
     const fetchRecord = async () => {
       if (!visitorName) {
@@ -103,37 +105,32 @@ export default function ManikinShowroomWithNamePage() {
   const handleRetry = () => {
     setFetchError(null);
     setReloadFlag(prev => prev + 1);
+    setIsSceneReady(false);
   };
 
-  const showLoading = isFetching && !hasLoadedOnce;
+  const waitingForData = isFetching && !hasLoadedOnce;
+  const waitingForScene = hasLoadedOnce && !isSceneReady;
+  const showLoading = waitingForData || waitingForScene;
   const showError = !!fetchError && !hasLoadedOnce;
-
-  const loadingView = (
-    <LoadingOverlay message="쇼룸 데이터를 불러오는 중입니다..." />
-  );
-
-  const errorView = (
-    <ErrorOverlay
-      title="쇼룸 데이터를 불러오지 못했습니다."
-      description="네트워크 상태를 확인한 뒤 다시 시도해 주세요."
-      actionLabel="다시 시도"
-      onAction={handleRetry}
-    />
-  );
+  const canRenderScene = hasLoadedOnce && !showError;
 
   return (
     <div className="relative h-screen w-screen overflow-hidden">
-      {showLoading && loadingView}
-      {showError && errorView}
-      {!showLoading && !showError && (
-        <Suspense
-          fallback={<LoadingOverlay message="3D 모델 로딩 중..." />}
-        >
+      {showLoading && <LoadingOverlay message="쇼룸을 불러오는 중입니다..." />}
+      {showError &&  <ErrorOverlay
+        title="쇼룸 데이터를 불러오지 못했습니다."
+        description="네트워크 상태를 확인한 뒤 다시 시도해 주세요."
+        actionLabel="다시 시도"
+        onAction={handleRetry}
+      />}
+      {canRenderScene && (
+        <Suspense fallback={<LoadingOverlay message="3D 모델 로딩 중..." />}>
           <ShowroomScene
-            key={visitorName}
+            key={`${visitorName}-${reloadFlag}`}
             visitorName={visitorName}
             initialObjects={initialObjects}
             onObjectsChange={handlePersistObjects}
+            onInitialLoadComplete={() => setIsSceneReady(true)}
           />
         </Suspense>
       )}

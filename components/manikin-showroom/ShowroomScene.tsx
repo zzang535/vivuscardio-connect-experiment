@@ -42,6 +42,7 @@ import { AVAILABLE_MODELS, AVAILABLE_MANIKINS, ModelType } from "@/lib/manikin-s
 import type { StoredObjectData } from "@/lib/manikin-showroom/storage";
 import Editor from "./editor/Editor";
 import PlacementModeGuide from "./guide/PlacementModeGuide";
+import VisitorBadge from "./guide/VisitorBadge";
 import DeleteZone from "./editor/DeleteZone";
 import ModelSelector from "./editor/ModelSelector";
 import MouseControlGuide from "./camera/MouseControlGuide";
@@ -53,9 +54,15 @@ interface ShowroomSceneProps {
   visitorName?: string;
   initialObjects?: StoredObjectData[] | null;
   onObjectsChange?: (objects: StoredObjectData[]) => void;
+  onInitialLoadComplete?: () => void;
 }
 
-export default function ShowroomScene({ visitorName, initialObjects = null, onObjectsChange }: ShowroomSceneProps) {
+export default function ShowroomScene({
+  visitorName,
+  initialObjects = null,
+  onObjectsChange,
+  onInitialLoadComplete,
+}: ShowroomSceneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -103,9 +110,18 @@ export default function ShowroomScene({ visitorName, initialObjects = null, onOb
   isPlacementValidRef.current = isPlacementValid;
 
   const storedObjectsDataRef = useRef<StoredObjectData[] | null>(initialObjects ?? null);
+  const hasNotifiedInitialLoadRef = useRef(false);
   useEffect(() => {
     storedObjectsDataRef.current = initialObjects ?? null;
+    hasNotifiedInitialLoadRef.current = false;
   }, [initialObjects]);
+
+  useEffect(() => {
+    if (!isLoading && !hasNotifiedInitialLoadRef.current) {
+      hasNotifiedInitialLoadRef.current = true;
+      onInitialLoadComplete?.();
+    }
+  }, [isLoading, onInitialLoadComplete]);
 
   // 로컬 스토리지에서 초기 객체 로딩을 한 번만 실행하기 위한 플래그
   const initialObjectsLoadedRef = useRef(false);
@@ -1150,12 +1166,7 @@ export default function ShowroomScene({ visitorName, initialObjects = null, onOb
         }}
       />
 
-      {visitorName && (
-        <div className="fixed left-6 top-6 z-20 rounded-2xl border border-white/10 bg-black/60 px-5 py-3 text-white shadow-lg backdrop-blur">
-          <p className="text-xs uppercase tracking-[0.3em] text-gray-300">Visitor</p>
-          <p className="text-lg font-semibold">{visitorName}</p>
-        </div>
-      )}
+      {visitorName && <VisitorBadge name={visitorName} />}
 
       {/* 마우스 컨트롤 안내 - 우측 상단 */}
       {!isLoading && <MouseControlGuide />}
@@ -1217,7 +1228,7 @@ export default function ShowroomScene({ visitorName, initialObjects = null, onOb
       />
 
       {/* 로딩 화면 */}
-      {isLoading && <LoadingOverlay />}
+      {/* {isLoading && <LoadingOverlay />} */}
     </>
   );
 }
