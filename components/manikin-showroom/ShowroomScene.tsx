@@ -566,18 +566,6 @@ export default function ShowroomScene() {
     const raycaster = new THREE.Raycaster();
     const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -CONSTANTS.GROUND_POSITION.Y);
 
-    // 캔버스 클릭 테스트
-    setTimeout(() => {
-
-      // 수동으로 이벤트 테스트
-      const testClick = new MouseEvent("mousedown", {
-        clientX: 100,
-        clientY: 100,
-        button: 0,
-      });
-      renderer.domElement.dispatchEvent(testClick);
-    }, 1000);
-
     // 조명 설정
     setupLights(scene);
 
@@ -586,31 +574,31 @@ export default function ShowroomScene() {
     scene.add(ground);
     groundRef.current = ground;
 
-        // 그리드 및 좌표계 생성
-        const grid = createGrid(
-          CONSTANTS.GROUND_SIZE.WIDTH,
-          CONSTANTS.GROUND_SIZE.WIDTH
-        );
+    // 그리드 및 좌표계 생성
+    const grid = createGrid(
+      CONSTANTS.GROUND_SIZE.WIDTH,
+      CONSTANTS.GROUND_SIZE.WIDTH
+    );
 
-        const axesHelper = createAxesHelper(10);
-        const axesLabels = createAxesLabels(10);
-        const coordinateLabels = createCoordinateLabels(
-          scene,
-          CONSTANTS.GROUND_SIZE.WIDTH,
-          5
-        );
+    const axesHelper = createAxesHelper(10);
+    const axesLabels = createAxesLabels(10);
+    const coordinateLabels = createCoordinateLabels(
+      scene,
+      CONSTANTS.GROUND_SIZE.WIDTH,
+      5
+    );
 
-        coordinateObjectsRef.current = [
-          grid,
-          axesHelper,
-          ...axesLabels,
-          ...coordinateLabels,
-        ];
+    coordinateObjectsRef.current = [
+      grid,
+      axesHelper,
+      ...axesLabels,
+      ...coordinateLabels,
+    ];
 
-        coordinateObjectsRef.current.forEach((obj) => {
-          scene.add(obj);
-          obj.visible = showCoordinates;
-        });
+    coordinateObjectsRef.current.forEach((obj) => {
+      scene.add(obj);
+      obj.visible = showCoordinates;
+    });
 
     // 모든 객체 로딩 상태 초기화
     loadingStateRef.current = {
