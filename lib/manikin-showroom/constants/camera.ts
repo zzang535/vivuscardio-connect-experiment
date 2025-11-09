@@ -45,7 +45,7 @@ export const INITIAL_CAMERA_TARGET = {
 /**
  * 카메라 댐핑(부드러운 움직임) 설정
  */
-export const DAMPING = {
+export const CAMERA_DAMPING = {
   /**
    * 댐핑 활성화 여부
    * - true: 카메라가 부드럽게 멈춤 (관성 효과)
@@ -85,7 +85,7 @@ export const CAMERA_DISTANCE = {
 /**
  * 카메라 조작 속도 설정
  */
-export const CONTROL_SPEED = {
+export const CAMERA_CONTROL_SPEED = {
   /**
    * 줌 속도 (마우스 휠 감도)
    * - 기본값: 1.0

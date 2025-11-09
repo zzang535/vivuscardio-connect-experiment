@@ -530,8 +530,8 @@ export default function ShowroomScene() {
 
     // OrbitControls 설정
     const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = CONSTANTS.DAMPING.ENABLED;
-    controls.dampingFactor = CONSTANTS.DAMPING.FACTOR;
+    controls.enableDamping = CONSTANTS.CAMERA_DAMPING.ENABLED;
+    controls.dampingFactor = CONSTANTS.CAMERA_DAMPING.FACTOR;
     controls.minDistance = CONSTANTS.CAMERA_DISTANCE.MIN;
     controls.maxDistance = CONSTANTS.CAMERA_DISTANCE.MAX;
     controls.target.set(
@@ -542,15 +542,15 @@ export default function ShowroomScene() {
 
     // 줌 설정
     controls.enableZoom = true;
-    controls.zoomSpeed = CONSTANTS.CONTROL_SPEED.ZOOM;
+    controls.zoomSpeed = CONSTANTS.CAMERA_CONTROL_SPEED.ZOOM;
 
     // 패닝 설정 (우클릭 드래그)
     controls.enablePan = true;
-    controls.panSpeed = CONSTANTS.CONTROL_SPEED.PAN;
+    controls.panSpeed = CONSTANTS.CAMERA_CONTROL_SPEED.PAN;
 
     // 회전 설정
     controls.enableRotate = true;
-    controls.rotateSpeed = CONSTANTS.CONTROL_SPEED.ROTATE;
+    controls.rotateSpeed = CONSTANTS.CAMERA_CONTROL_SPEED.ROTATE;
 
     // 터치 제스처 설정 (모바일)
     controls.touches = {
