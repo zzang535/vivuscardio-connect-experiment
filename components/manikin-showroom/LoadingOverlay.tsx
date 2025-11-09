@@ -4,7 +4,7 @@ interface LoadingOverlayProps {
   message?: string;
 }
 
-export default function LoadingOverlay({ message = "Loading 3D Models..." }: LoadingOverlayProps) {
+export default function LoadingOverlay({ message = "3D 모델을 로딩중입니다..." }: LoadingOverlayProps) {
   return (
     <div
       style={{
@@ -13,7 +13,7 @@ export default function LoadingOverlay({ message = "Loading 3D Models..." }: Loa
         left: 0,
         width: "100vw",
         height: "100vh",
-        backgroundColor: "rgba(42, 42, 42, 0.9)",
+        backgroundColor: "rgba(15, 15, 15, 0.92)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",

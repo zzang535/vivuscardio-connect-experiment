@@ -4,6 +4,9 @@ import dynamic from "next/dynamic";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
+import LoadingOverlay from "@/components/manikin-showroom/LoadingOverlay";
+import ErrorOverlay from "@/components/manikin-showroom/ErrorOverlay";
+
 import type { StoredObjectData } from "@/lib/manikin-showroom/storage";
 
 const ShowroomScene = dynamic(
@@ -106,26 +109,16 @@ export default function ManikinShowroomWithNamePage() {
   const showError = !!fetchError && !hasLoadedOnce;
 
   const loadingView = (
-    <div className="flex h-full w-full items-center justify-center bg-gray-900">
-      <div className="text-center">
-        <div className="mx-auto mb-4 h-16 w-16 animate-spin rounded-full border-b-2 border-t-2 border-blue-500" />
-        <p className="text-gray-300">쇼룸 데이터를 불러오는 중입니다...</p>
-      </div>
-    </div>
+    <LoadingOverlay message="쇼룸 데이터를 불러오는 중입니다..." />
   );
 
   const errorView = (
-    <div className="flex h-full w-full flex-col items-center justify-center bg-gray-950 px-6 text-center text-gray-200">
-      <p className="text-lg font-semibold">쇼룸 데이터를 불러오지 못했습니다.</p>
-      <p className="mt-2 text-sm text-gray-400">네트워크 상태를 확인한 뒤 다시 시도해 주세요.</p>
-      <button
-        type="button"
-        onClick={handleRetry}
-        className="mt-6 rounded-xl bg-blue-500 px-6 py-3 text-white transition hover:bg-blue-400"
-      >
-        다시 시도
-      </button>
-    </div>
+    <ErrorOverlay
+      title="쇼룸 데이터를 불러오지 못했습니다."
+      description="네트워크 상태를 확인한 뒤 다시 시도해 주세요."
+      actionLabel="다시 시도"
+      onAction={handleRetry}
+    />
   );
 
   return (
@@ -134,14 +127,7 @@ export default function ManikinShowroomWithNamePage() {
       {showError && errorView}
       {!showLoading && !showError && (
         <Suspense
-          fallback={
-            <div className="flex h-full w-full items-center justify-center bg-gray-900">
-              <div className="text-center">
-                <div className="mx-auto mb-4 h-16 w-16 animate-spin rounded-full border-b-2 border-t-2 border-blue-500" />
-                <p className="text-gray-300">3D 모델 로딩 중...</p>
-              </div>
-            </div>
-          }
+          fallback={<LoadingOverlay message="3D 모델 로딩 중..." />}
         >
           <ShowroomScene
             key={visitorName}
