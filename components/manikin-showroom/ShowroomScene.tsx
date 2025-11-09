@@ -477,6 +477,7 @@ export default function ShowroomScene() {
 
 
 
+  // 메인 씬 설정
   useEffect(() => {
     if (!containerRef.current) return;
 

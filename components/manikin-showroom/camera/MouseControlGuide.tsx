@@ -116,6 +116,84 @@ export default function MouseControlGuide() {
           </div>
         </div>
 
+        {/* 패닝 */}
+        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+          {/* 오른쪽 버튼 강조 */}
+          <svg
+            width="40"
+            height="40"
+            viewBox="0 0 40 40"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect
+              x="10"
+              y="6"
+              width="20"
+              height="28"
+              rx="10"
+              fill="#E8E8E8"
+              stroke="#555"
+              strokeWidth="2"
+            />
+            <path
+              d="M20 6C25.523 6 30 10.477 30 16V18H20V6Z"
+              fill="#4A9EFF"
+            />
+            <line
+              x1="20"
+              y1="6"
+              x2="20"
+              y2="18"
+              stroke="#555"
+              strokeWidth="2"
+            />
+          </svg>
+
+          <div
+            style={{
+              fontSize: "20px",
+              fontWeight: "700",
+              color: "#999",
+              lineHeight: "1",
+            }}
+          >
+            →
+          </div>
+
+          {/* 패닝 화살표 */}
+          <svg
+            width="40"
+            height="40"
+            viewBox="0 0 40 40"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M20 10V30"
+              stroke="#4A9EFF"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeDasharray="4 4"
+            />
+            <path
+              d="M10 20H30"
+              stroke="#4A9EFF"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            />
+            <path d="M27 17L30 20L27 23" fill="#4A9EFF" />
+            <path d="M13 17L10 20L13 23" fill="#4A9EFF" />
+          </svg>
+
+          <div style={{ marginLeft: "4px" }}>
+            <div style={{ fontWeight: "600", marginBottom: "2px" }}>우클릭 드래그</div>
+            <div style={{ fontSize: "12px", opacity: 0.85 }}>
+              패닝 이동 (속도 1.5)
+            </div>
+          </div>
+        </div>
+
         {/* 스크롤 */}
         <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
           {/* 왼쪽: 마우스 휠 */}
