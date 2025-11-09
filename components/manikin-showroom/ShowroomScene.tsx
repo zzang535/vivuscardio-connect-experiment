@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
@@ -39,6 +39,7 @@ import {
 } from "@/lib/manikin-showroom/objectControl";
 import { UserInteractionManager } from "@/lib/manikin-showroom/userInteraction";
 import { AVAILABLE_MODELS, AVAILABLE_MANIKINS, ModelType } from "@/lib/manikin-showroom/modelTypes";
+import type { StoredObjectData } from "@/lib/manikin-showroom/storage";
 import Editor from "./editor/Editor";
 import PlacementModeGuide from "./guide/PlacementModeGuide";
 import DeleteZone from "./editor/DeleteZone";
@@ -48,7 +49,13 @@ import Camera360Button from "./action/Camera360Button";
 import IPadModal from "./modal/IPadModal";
 import LoadingOverlay from "./LoadingOverlay";
 
-export default function ShowroomScene() {
+interface ShowroomSceneProps {
+  visitorName?: string;
+  initialObjects?: StoredObjectData[] | null;
+  onObjectsChange?: (objects: StoredObjectData[]) => void;
+}
+
+export default function ShowroomScene({ visitorName, initialObjects = null, onObjectsChange }: ShowroomSceneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -94,6 +101,11 @@ export default function ShowroomScene() {
   userAddedObjectsRef.current = userAddedObjects;
   const isPlacementValidRef = useRef(isPlacementValid);
   isPlacementValidRef.current = isPlacementValid;
+
+  const storedObjectsDataRef = useRef<StoredObjectData[] | null>(initialObjects ?? null);
+  useEffect(() => {
+    storedObjectsDataRef.current = initialObjects ?? null;
+  }, [initialObjects]);
 
   // 로컬 스토리지에서 초기 객체 로딩을 한 번만 실행하기 위한 플래그
   const initialObjectsLoadedRef = useRef(false);
@@ -159,18 +171,6 @@ export default function ShowroomScene() {
       child.userData.rootObject = object;
     });
   };
-
-  interface StoredObjectData {
-    id: string;
-    modelTypeId?: string;
-    type: ModelType['type'];
-    color: number;
-    position: number[];
-    rotation: number[];
-    scale: number[];
-    placementDimensions: Dimensions;
-    previewDimensions?: Dimensions;
-  }
 
   const getObjectColor = (object: THREE.Object3D): number => {
     let detectedColor = 0xffffff;
@@ -243,7 +243,7 @@ export default function ShowroomScene() {
       id: data.modelTypeId || existing?.id || data.id,
       name: existing?.name || 'Saved Object',
       description: existing?.description || '',
-      type: data.type || existing?.type || 'box',
+      type: (data.type || existing?.type || 'box') as ModelType['type'],
       modelPath:
         existing?.modelPath ||
         ((data.type || existing?.type) === 'model'
@@ -334,28 +334,32 @@ export default function ShowroomScene() {
   const autoMoveRef = useRef<AutoMoveState>(createAutoMoveState());
 
   // 오브젝트 저장/로딩 함수들
-  const saveObjectsToStorage = (objects: THREE.Object3D[]) => {
-    try {
-      const objectsData = objects.map(obj => serializeObjectForStorage(obj));
-      localStorage.setItem('manikinShowroomObjects', JSON.stringify(objectsData));
-    } catch (error) {
-      console.error('Failed to save objects:', error);
-    }
-  };
+  const saveObjectsToStorage = useCallback(
+    (objects: THREE.Object3D[]) => {
+      try {
+        const objectsData = objects.map(obj => serializeObjectForStorage(obj));
+        storedObjectsDataRef.current = objectsData;
+        onObjectsChange?.(objectsData);
+      } catch (error) {
+        console.error('Failed to persist showroom objects:', error);
+      }
+    },
+    [onObjectsChange, serializeObjectForStorage]
+  );
 
   const loadObjectsFromStorage = (): THREE.Object3D[] => {
     try {
-      const savedData = localStorage.getItem('manikinShowroomObjects');
       const scene = sceneRef.current;
-      if (!savedData || !scene) return [];
+      const savedData = storedObjectsDataRef.current;
+      if (!scene || !savedData || savedData.length === 0) return [];
 
-      const rawObjectsData: any[] = JSON.parse(savedData);
-      const normalizedData: StoredObjectData[] = rawObjectsData.map((data) => {
+      const normalizedData: StoredObjectData[] = savedData.map((data) => {
         if (data.placementDimensions) {
           return data;
         }
 
-        const geometry = data.geometry || { width: 2, height: 2, depth: 2 };
+        const legacyGeometry = (data as Partial<{ geometry?: Dimensions }>).geometry;
+        const geometry = legacyGeometry || data.previewDimensions || { width: 2, height: 2, depth: 2 };
         return {
           id: data.id,
           modelTypeId: data.modelTypeId,
@@ -370,7 +374,7 @@ export default function ShowroomScene() {
             depth: geometry.depth || 2,
           },
           previewDimensions: geometry,
-        } as StoredObjectData;
+        } satisfies StoredObjectData;
       });
 
       const loadedObjects: THREE.Object3D[] = [];
@@ -1145,6 +1149,13 @@ export default function ShowroomScene() {
           overflow: "hidden",
         }}
       />
+
+      {visitorName && (
+        <div className="fixed left-6 top-6 z-20 rounded-2xl border border-white/10 bg-black/60 px-5 py-3 text-white shadow-lg backdrop-blur">
+          <p className="text-xs uppercase tracking-[0.3em] text-gray-300">Visitor</p>
+          <p className="text-lg font-semibold">{visitorName}</p>
+        </div>
+      )}
 
       {/* 마우스 컨트롤 안내 - 우측 상단 */}
       {!isLoading && <MouseControlGuide />}
