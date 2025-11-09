@@ -558,16 +558,6 @@ export default function ShowroomScene() {
       TWO: THREE.TOUCH.DOLLY_PAN,
     };
 
-    // 패닝 제한: 지면 아래로 이동하지 못하도록 제한
-    const minTargetY = CONSTANTS.GROUND_POSITION.Y + 0.1; // 지면보다 약간 위로 제한
-    const handlePanLimit = () => {
-      if (controls.target.y < minTargetY) {
-        controls.target.y = minTargetY;
-        controls.update();
-      }
-    };
-    controls.addEventListener("change", handlePanLimit);
-
     controlsRef.current = controls;
     controls.update();
 
@@ -1151,8 +1141,6 @@ export default function ShowroomScene() {
         console.log("Canvas removed from container");
       }
 
-      // 패닝 제한 이벤트 리스너 제거
-      controls.removeEventListener("change", handlePanLimit);
       controls.dispose();
       renderer.dispose();
 
