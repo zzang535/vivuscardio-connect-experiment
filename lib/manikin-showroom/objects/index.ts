@@ -6,6 +6,8 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import * as CONSTANTS from "../constants";
+export * from "./logoBanner";
+export * from "./boxGeometry";
 
 /**
  * Canvas를 사용하여 텍스트 텍스처 생성
@@ -89,13 +91,13 @@ export function createPoster(
   const poster = new THREE.Mesh(geometry, material);
 
   // 테이블 앞면에 배치 (테이블 면 안쪽으로 딱 붙임)
-  const tableTopY = CONSTANTS.TABLE_POSITION.Y + CONSTANTS.TABLE_SIZE.HEIGHT / 2;
+  const tableTopY = CONSTANTS.BOX_POSITION.Y + CONSTANTS.BOX_SIZE.HEIGHT / 2;
   const posterY = tableTopY + CONSTANTS.POSTER_STYLE.HEIGHT_OFFSET;
   
   // 테이블 회전 각도를 고려하여 포스터 위치 계산
   // 회전이 없으면: Z = DEPTH/2 위치 (앞면, 정면에서 보임)
   // 90도 회전이면: X축 양의 방향으로 이동 (오른쪽 면, 정면에서 보임)
-  const tableDepthHalf = CONSTANTS.TABLE_SIZE.DEPTH / 2;
+  const tableDepthHalf = CONSTANTS.BOX_SIZE.DEPTH / 2;
   const offset = tableDepthHalf - CONSTANTS.POSTER_STYLE.FRONT_OFFSET;
   
   // 회전 각도를 0~2π 범위로 정규화
@@ -158,34 +160,6 @@ export function createGround(): THREE.Mesh {
   ground.receiveShadow = true; // 그림자만 받음 (그림자를 투사하지 않음)
 
   return ground;
-}
-
-/**
- * 테이블 메쉬 생성
- * @param width 테이블 너비 (기본값: TABLE_SIZE.WIDTH)
- * @param height 테이블 높이 (기본값: TABLE_SIZE.HEIGHT)
- * @param depth 테이블 깊이 (기본값: TABLE_SIZE.DEPTH)
- * @returns Three.js Mesh 객체
- */
-export function createTable(
-  width: number = CONSTANTS.TABLE_SIZE.WIDTH,
-  height: number = CONSTANTS.TABLE_SIZE.HEIGHT,
-  depth: number = CONSTANTS.TABLE_SIZE.DEPTH
-): THREE.Mesh {
-  const geometry = new THREE.BoxGeometry(width, height, depth);
-
-  const material = new THREE.MeshStandardMaterial({
-    color: CONSTANTS.TABLE_MATERIAL.COLOR,
-    roughness: CONSTANTS.TABLE_MATERIAL.ROUGHNESS,
-    metalness: CONSTANTS.TABLE_MATERIAL.METALNESS,
-  });
-
-  const table = new THREE.Mesh(geometry, material);
-  table.position.set(0, CONSTANTS.TABLE_POSITION.Y, 0);
-  table.castShadow = true;
-  table.receiveShadow = true;
-
-  return table;
 }
 
 /**
@@ -281,7 +255,7 @@ export function positionManikinOnTable(manikin: THREE.Object3D, xPosition: numbe
   console.log("Model size:", size.x.toFixed(2), size.y.toFixed(2), size.z.toFixed(2));
 
   // 테이블 상단 위치 계산
-  const tableTopY = CONSTANTS.TABLE_POSITION.Y + CONSTANTS.TABLE_SIZE.HEIGHT / 2;
+  const tableTopY = CONSTANTS.BOX_POSITION.Y + CONSTANTS.BOX_SIZE.HEIGHT / 2;
 
   // 마네킹을 지정된 X 위치에 배치, Y축은 테이블 위에 딱 붙도록 조정
   // 마네킹의 바닥(bottom) = center.y - size.y / 2
@@ -300,19 +274,19 @@ export function positionManikinOnTable(manikin: THREE.Object3D, xPosition: numbe
 /**
  * 여러 마네킹을 테이블 위에 일정 간격으로 배치
  * @param manikins 마네킹 Object3D 배열
- * @param tableWidth 테이블 너비 (기본값: TABLE_SIZE.WIDTH)
+ * @param tableWidth 테이블 너비 (기본값: BOX_SIZE.WIDTH)
  * @returns 배치된 마네킹들의 중심 Y 좌표와 X 위치 배열
  */
 export function positionMultipleManikinsOnTable(
   manikins: THREE.Object3D[],
-  tableWidth: number = CONSTANTS.TABLE_SIZE.WIDTH
+  tableWidth: number = CONSTANTS.BOX_SIZE.WIDTH
 ): { centerY: number; positions: number[] } {
   if (manikins.length === 0) return { centerY: 0, positions: [] };
 
   // 첫 번째 마네킹의 크기로 계산 (모든 마네킹이 같은 크기라고 가정)
   const box = new THREE.Box3().setFromObject(manikins[0]);
   const size = box.getSize(new THREE.Vector3());
-  const tableTopY = CONSTANTS.TABLE_POSITION.Y + CONSTANTS.TABLE_SIZE.HEIGHT / 2;
+  const tableTopY = CONSTANTS.BOX_POSITION.Y + CONSTANTS.BOX_SIZE.HEIGHT / 2;
 
   // 테이블 사용 가능한 공간 (여백 포함)
   const usableWidth = tableWidth * 0.8; // 테이블의 80% 사용
@@ -368,7 +342,7 @@ export function autoAdjustCamera({
   manikinPositions,
 }: AutoAdjustCameraOptions): void {
   // 전체 씬의 높이 고려 (테이블 + 마네킹)
-  const totalHeight = manikinSize.y + CONSTANTS.TABLE_SIZE.HEIGHT + CONSTANTS.MANIKIN_TABLE_OFFSET;
+  const totalHeight = manikinSize.y + CONSTANTS.BOX_SIZE.HEIGHT + CONSTANTS.MANIKIN_BOX_OFFSET;
   const maxDim = Math.max(manikinSize.x, totalHeight, manikinSize.z);
   console.log("Max dimension:", maxDim.toFixed(2));
 
@@ -412,118 +386,6 @@ export function autoAdjustCamera({
  * @param height 배너 높이 (기본값: 10)
  * @param onLoadComplete 로드 완료 콜백 함수
  */
-export function createLogoBanner(
-  scene: THREE.Scene,
-  positionX: number = 0,
-  positionY: number = 0,
-  positionZ: number = -10,
-  width: number = 20,
-  height: number = 10,
-  onLoadComplete?: () => void
-): void {
-  const textureLoader = new THREE.TextureLoader();
-  
-  textureLoader.load(
-    "/manikin-showroom/VivusCardioLogo.svg",
-    (texture) => {
-      // SVG 비율 유지 (438:117)
-      const svgAspectRatio = 438 / 117;
-      const bannerAspectRatio = width / height;
-      
-      // 마진을 추가하기 위해 배너 크기의 85%를 사용 (좌우, 상하 각각 7.5% 마진)
-      const marginRatio = 0.85;
-      const logoAreaWidth = width * marginRatio;
-      const logoAreaHeight = height * marginRatio;
-      
-      // 로고 크기 계산 (SVG 비율 유지하면서 마진 영역 내에 배치)
-      let finalWidth = logoAreaWidth;
-      let finalHeight = logoAreaHeight;
-      
-      if (bannerAspectRatio > svgAspectRatio) {
-        // 배너가 더 넓으면 높이를 기준으로 조정
-        finalWidth = logoAreaHeight * svgAspectRatio;
-      } else {
-        // 배너가 더 높으면 너비를 기준으로 조정
-        finalHeight = logoAreaWidth / svgAspectRatio;
-      }
-      
-      // 텍스처 설정
-      texture.flipY = true; // 올바른 방향으로 표시
-      texture.colorSpace = THREE.SRGBColorSpace;
-      texture.premultiplyAlpha = false; // 투명도 처리 개선 (투명 영역이 검정색으로 보이는 문제 해결)
-      
-      // 배경 재질 생성 (배너 판자) - 흰색으로 복원
-      // MeshBasicMaterial을 사용하여 조명에 영향받지 않고 항상 흰색으로 표시
-      const backgroundMaterial = new THREE.MeshBasicMaterial({
-        color: 0xffffff, // 흰색으로 복원
-        side: THREE.DoubleSide,
-      });
-      
-      // 로고 텍스처 재질 생성 (원본 색상 유지, 투명도 처리)
-      // MeshBasicMaterial을 사용하여 조명에 영향받지 않고 원본 색상 유지
-      const logoMaterial = new THREE.MeshBasicMaterial({
-        map: texture,
-        transparent: true, // 투명도 활성화
-        opacity: 1.0,
-        side: THREE.DoubleSide,
-        alphaTest: 0.1, // 투명한 픽셀 제거
-        // color를 설정하지 않아 원본 SVG 색상 유지
-      });
-      
-      // 배너 받침대 생성 (검정색 직육면체)
-      const standWidth = width + 0.5; // 배너보다 약간 넓게
-      const standHeight = 0.3; // 받침대 높이
-      const standDepth = 0.5; // 받침대 깊이
-      const standGeometry = new THREE.BoxGeometry(standWidth, standHeight, standDepth);
-      const standMaterial = new THREE.MeshBasicMaterial({
-        color: 0x000000, // 검정색
-        side: THREE.DoubleSide,
-      });
-      const stand = new THREE.Mesh(standGeometry, standMaterial);
-      
-      // 받침대 하단이 지면에 닿도록 위치 계산
-      const groundY = CONSTANTS.GROUND_POSITION.Y; // 지면 Y 위치
-      const standY = groundY + standHeight / 2; // 받침대 중앙 = 지면 + 받침대 높이/2
-      stand.position.set(positionX, standY, positionZ);
-      
-      // 배너 배경 판자 생성 (흰색)
-      // 배너 하단이 받침대 상단에 닿도록 배치
-      const backgroundGeometry = new THREE.PlaneGeometry(width, height);
-      const background = new THREE.Mesh(backgroundGeometry, backgroundMaterial);
-      const backgroundY = standY + standHeight / 2 + height / 2; // 받침대 상단 + 배너 높이/2
-      background.position.set(positionX, backgroundY, positionZ);
-      
-      // positionY를 업데이트하여 로고도 같은 높이에 배치
-      const updatedPositionY = backgroundY;
-      // MeshBasicMaterial은 그림자를 지원하지 않음
-      
-      // 로고 메쉬 생성 (배경보다 약간 앞에 배치)
-      const logoGeometry = new THREE.PlaneGeometry(finalWidth, finalHeight);
-      const logo = new THREE.Mesh(logoGeometry, logoMaterial);
-      logo.position.set(positionX, updatedPositionY, positionZ + 0.01); // 배경보다 0.01 앞에 배치
-      // MeshBasicMaterial은 그림자를 지원하지 않음
-      
-      scene.add(stand);
-      scene.add(background);
-      scene.add(logo);
-      console.log(`Logo banner created at (${positionX.toFixed(2)}, ${positionY.toFixed(2)}, ${positionZ.toFixed(2)}), background size: ${width.toFixed(2)} x ${height.toFixed(2)}, logo size: ${finalWidth.toFixed(2)} x ${finalHeight.toFixed(2)}, stand size: ${standWidth.toFixed(2)} x ${standHeight.toFixed(2)} x ${standDepth.toFixed(2)}`);
-      
-      // 로드 완료 콜백 호출
-      if (onLoadComplete) {
-        onLoadComplete();
-      }
-    },
-    undefined,
-    (error) => {
-      console.error("=== Error loading logo banner ===", error);
-      // 에러 발생 시에도 콜백 호출 (로딩 상태 업데이트)
-      if (onLoadComplete) {
-        onLoadComplete();
-      }
-    }
-  );
-}
-
 /**
  * AED-T 모델을 테이블 위에 로드 및 배치
  * @param scene Three.js Scene 객체

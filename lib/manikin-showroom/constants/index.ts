@@ -120,7 +120,7 @@ export const AUTO_CAMERA = {
 /**
  * 테이블 크기 (가로 x 높이 x 세로)
  */
-export const TABLE_SIZE = {
+export const BOX_SIZE = {
   /**
    * 테이블 길이 (가로)
    * - 마네킹 크기보다 충분히 커야 함
@@ -141,7 +141,7 @@ export const TABLE_SIZE = {
 /**
  * 테이블 위치
  */
-export const TABLE_POSITION = {
+export const BOX_POSITION = {
   /**
    * 테이블의 Y 위치 (높이)
    * - 0: 바닥
@@ -153,7 +153,7 @@ export const TABLE_POSITION = {
 /**
  * 테이블 재질 설정
  */
-export const TABLE_MATERIAL = {
+export const BOX_MATERIAL = {
   /**
    * 테이블 색상 (16진수 컬러 코드)
    * - 0x8b7355: 나무색 (밝은 갈색)
@@ -179,7 +179,7 @@ export const TABLE_MATERIAL = {
  * 마네킹이 테이블 위에 놓이는 높이 오프셋
  * - 테이블 위치 + 테이블 두께/2 + 이 값 = 마네킹 바닥 위치
  */
-export const MANIKIN_TABLE_OFFSET = 0.05;
+export const MANIKIN_BOX_OFFSET = 0.05;
 
 // ============================================
 // 포스터 설정

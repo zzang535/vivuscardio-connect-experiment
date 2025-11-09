@@ -10,7 +10,7 @@ import * as ASSETS from "@/lib/manikin-showroom/assets";
 import { CAMERA_TOUR_MUSIC_PATH } from "@/lib/manikin-showroom/assets";
 import {
   createGround,
-  createTable,
+  createBoxGeometry,
   setupLights,
   createManikinMaterial,
   createManikin,
@@ -644,32 +644,32 @@ export default function ShowroomScene() {
     }); // 크기: 15 x 8, Y 위치는 함수 내부에서 지면 기준으로 계산
 
     // 첫 번째 테이블 생성 (가로 방향, 길이 13)
-    const table1 = createTable(
+    const table1 = createBoxGeometry(
       table1Width,
-      CONSTANTS.TABLE_SIZE.HEIGHT,
-      CONSTANTS.TABLE_SIZE.DEPTH
+      CONSTANTS.BOX_SIZE.HEIGHT,
+      CONSTANTS.BOX_SIZE.DEPTH
     );
     scene.add(table1);
 
     // 두 번째 테이블 생성 (세로 방향, L자 형태로 배치, 길이는 반으로)
     // const table2Width = table1Width / 2; // 첫 번째 테이블 길이의 /
-    const table2 = createTable(
+    const table2 = createBoxGeometry(
       table1Width, // 길이를 반으로
-      CONSTANTS.TABLE_SIZE.HEIGHT, // 높이는 동일
-      CONSTANTS.TABLE_SIZE.DEPTH // 깊이는 동일
+      CONSTANTS.BOX_SIZE.HEIGHT, // 높이는 동일
+      CONSTANTS.BOX_SIZE.DEPTH // 깊이는 동일
     );
     // 두 번째 테이블을 90도 회전시켜 세로 방향으로 만들고
     // 첫 번째 테이블의 오른쪽 끝과 겹치도록 배치하여 L자 형태 만듦
     // 회전 후: WIDTH(table2Width) → DEPTH, DEPTH(1.5) → WIDTH
     const table1HalfWidth = table1Width / 2; // 첫 번째 테이블의 반 너비 (6.5)
-    const table2RotatedWidth = CONSTANTS.TABLE_SIZE.DEPTH / 2; // 회전 후 두 번째 테이블의 반 너비 (0.75)
+    const table2RotatedWidth = CONSTANTS.BOX_SIZE.DEPTH / 2; // 회전 후 두 번째 테이블의 반 너비 (0.75)
 
     // 두 번째 테이블의 중심 위치 계산
     // X: 첫 번째 테이블의 오른쪽 끝에 두 번째 테이블의 반 너비를 더해 겹치도록 배치
     // Z: 첫 번째 테이블의 앞쪽 끝과 맞춤 (갈색 테이블의 Z = 0, DEPTH = 1.5이므로 앞쪽 끝 = -0.75)
     table2.position.set(
       table1HalfWidth + table2RotatedWidth, // X: 6.5 + 0.75 = 7.25 (겹치도록 배치)
-      CONSTANTS.TABLE_POSITION.Y, // 같은 높이
+      CONSTANTS.BOX_POSITION.Y, // 같은 높이
       5.5
     );
     // 두 번째 테이블을 90도 회전시켜 세로 방향으로 만듦
@@ -764,13 +764,13 @@ export default function ShowroomScene() {
         // 두 번째 테이블 위에 AED-T 모델 로드
         const table1HalfWidthCalc = table1Width / 2;
         const table2WidthCalc = table1Width / 2;
-        const table2RotatedWidthCalc = CONSTANTS.TABLE_SIZE.DEPTH / 2;
+        const table2RotatedWidthCalc = CONSTANTS.BOX_SIZE.DEPTH / 2;
         const table2RotatedDepthCalc = table2WidthCalc / 2;
         const table2PositionX = table1HalfWidthCalc + table2RotatedWidthCalc;
         const table2PositionZ =
-          table2RotatedDepthCalc - CONSTANTS.TABLE_SIZE.DEPTH / 2;
+          table2RotatedDepthCalc - CONSTANTS.BOX_SIZE.DEPTH / 2;
         const table2TopY =
-          CONSTANTS.TABLE_POSITION.Y + CONSTANTS.TABLE_SIZE.HEIGHT / 2;
+          CONSTANTS.BOX_POSITION.Y + CONSTANTS.BOX_SIZE.HEIGHT / 2;
 
         // 마네킹 로드 완료
         loadingStateRef.current.manikins = true;
