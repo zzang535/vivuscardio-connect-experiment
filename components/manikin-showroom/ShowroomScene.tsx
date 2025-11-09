@@ -634,7 +634,6 @@ export default function ShowroomScene() {
     };
 
     // 로고 배너 생성 (마네킹 뒤쪽에 배치, 지면에 닿도록)
-    const table1Width = 13;
     // positionY는 함수 내부에서 계산되므로 임시 값 전달 (실제로는 받침대를 기준으로 계산됨)
     const bannerZ = -8; // 마네킹 뒤쪽 (Z축 음수)
     createLogoBanner(scene, 0, 0, bannerZ, 15, 8, () => {
@@ -643,45 +642,35 @@ export default function ShowroomScene() {
       checkAllLoaded();
     }); // 크기: 15 x 8, Y 위치는 함수 내부에서 지면 기준으로 계산
 
-    // 첫 번째 테이블 생성 (가로 방향, 길이 13)
-    const table1 = createBoxGeometry(
-      table1Width,
-      CONSTANTS.BOX_SIZE.HEIGHT,
-      CONSTANTS.BOX_SIZE.DEPTH
+    const mainTableConfig = CONSTANTS.BACKGROUND_TABLES.MAIN;
+    const mainTable = createBoxGeometry({
+      width: mainTableConfig.dimensions.width,
+      height: mainTableConfig.dimensions.height,
+      depth: mainTableConfig.dimensions.depth,
+      color: mainTableConfig.color,
+    });
+    mainTable.position.set(
+      mainTableConfig.position.x,
+      mainTableConfig.position.y,
+      mainTableConfig.position.z
     );
-    scene.add(table1);
+    mainTable.rotation.y = mainTableConfig.rotationY;
+    scene.add(mainTable);
 
-    // 두 번째 테이블 생성 (세로 방향, L자 형태로 배치, 길이는 반으로)
-    // const table2Width = table1Width / 2; // 첫 번째 테이블 길이의 /
-    const table2 = createBoxGeometry(
-      table1Width, // 길이를 반으로
-      CONSTANTS.BOX_SIZE.HEIGHT, // 높이는 동일
-      CONSTANTS.BOX_SIZE.DEPTH // 깊이는 동일
+    const secondaryTableConfig = CONSTANTS.BACKGROUND_TABLES.SECONDARY;
+    const secondaryTable = createBoxGeometry({
+      width: secondaryTableConfig.dimensions.width,
+      height: secondaryTableConfig.dimensions.height,
+      depth: secondaryTableConfig.dimensions.depth,
+      color: secondaryTableConfig.color,
+    });
+    secondaryTable.position.set(
+      secondaryTableConfig.position.x,
+      secondaryTableConfig.position.y,
+      secondaryTableConfig.position.z
     );
-    // 두 번째 테이블을 90도 회전시켜 세로 방향으로 만들고
-    // 첫 번째 테이블의 오른쪽 끝과 겹치도록 배치하여 L자 형태 만듦
-    // 회전 후: WIDTH(table2Width) → DEPTH, DEPTH(1.5) → WIDTH
-    const table1HalfWidth = table1Width / 2; // 첫 번째 테이블의 반 너비 (6.5)
-    const table2RotatedWidth = CONSTANTS.BOX_SIZE.DEPTH / 2; // 회전 후 두 번째 테이블의 반 너비 (0.75)
-
-    // 두 번째 테이블의 중심 위치 계산
-    // X: 첫 번째 테이블의 오른쪽 끝에 두 번째 테이블의 반 너비를 더해 겹치도록 배치
-    // Z: 첫 번째 테이블의 앞쪽 끝과 맞춤 (갈색 테이블의 Z = 0, DEPTH = 1.5이므로 앞쪽 끝 = -0.75)
-    table2.position.set(
-      table1HalfWidth + table2RotatedWidth, // X: 6.5 + 0.75 = 7.25 (겹치도록 배치)
-      CONSTANTS.BOX_POSITION.Y, // 같은 높이
-      5.5
-    );
-    // 두 번째 테이블을 90도 회전시켜 세로 방향으로 만듦
-    table2.rotation.y = Math.PI / 2; // 90도 회전 (Y축 기준)
-
-    // AED-T 테이블 색상을 빨간색(약간 죽인 톤)으로 변경
-    // 원본 #CC0000에서 약간 채도와 밝기를 낮춘 #B01A1A
-    if (table2.material instanceof THREE.MeshStandardMaterial) {
-      table2.material.color.setHex(0xb01a1a);
-    }
-
-    scene.add(table2);
+    secondaryTable.rotation.y = secondaryTableConfig.rotationY;
+    scene.add(secondaryTable);
 
     // OBJ 모델 로드 (마네킹 5개)
     const loader = new OBJLoader();
@@ -762,15 +751,11 @@ export default function ShowroomScene() {
         console.log("=== Manikins setup complete ===");
 
         // 두 번째 테이블 위에 AED-T 모델 로드
-        const table1HalfWidthCalc = table1Width / 2;
-        const table2WidthCalc = table1Width / 2;
-        const table2RotatedWidthCalc = CONSTANTS.BOX_SIZE.DEPTH / 2;
-        const table2RotatedDepthCalc = table2WidthCalc / 2;
-        const table2PositionX = table1HalfWidthCalc + table2RotatedWidthCalc;
-        const table2PositionZ =
-          table2RotatedDepthCalc - CONSTANTS.BOX_SIZE.DEPTH / 2;
+        const table2PositionX = secondaryTableConfig.position.x;
+        const table2PositionZ = secondaryTableConfig.position.z;
         const table2TopY =
-          CONSTANTS.BOX_POSITION.Y + CONSTANTS.BOX_SIZE.HEIGHT / 2;
+          secondaryTableConfig.position.y +
+          secondaryTableConfig.dimensions.height / 2;
 
         // 마네킹 로드 완료
         loadingStateRef.current.manikins = true;

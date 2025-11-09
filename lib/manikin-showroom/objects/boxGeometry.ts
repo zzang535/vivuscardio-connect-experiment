@@ -1,20 +1,26 @@
 import * as THREE from "three";
 import * as CONSTANTS from "../constants";
 
-/**
- * 테이블 메쉬 생성
- */
-export function createBoxGeometry(
-  width: number = CONSTANTS.BOX_SIZE.WIDTH,
-  height: number = CONSTANTS.BOX_SIZE.HEIGHT,
-  depth: number = CONSTANTS.BOX_SIZE.DEPTH
-): THREE.Mesh {
+export interface BoxGeometryOptions {
+  width?: number;
+  height?: number;
+  depth?: number;
+  color?: number;
+  roughness?: number;
+  metalness?: number;
+}
+
+export function createBoxGeometry(options: BoxGeometryOptions = {}): THREE.Mesh {
+  const width = options.width ?? CONSTANTS.BOX_SIZE.WIDTH;
+  const height = options.height ?? CONSTANTS.BOX_SIZE.HEIGHT;
+  const depth = options.depth ?? CONSTANTS.BOX_SIZE.DEPTH;
+
   const geometry = new THREE.BoxGeometry(width, height, depth);
 
   const material = new THREE.MeshStandardMaterial({
-    color: CONSTANTS.BOX_MATERIAL.COLOR,
-    roughness: CONSTANTS.BOX_MATERIAL.ROUGHNESS,
-    metalness: CONSTANTS.BOX_MATERIAL.METALNESS,
+    color: options.color ?? CONSTANTS.BOX_MATERIAL.COLOR,
+    roughness: options.roughness ?? CONSTANTS.BOX_MATERIAL.ROUGHNESS,
+    metalness: options.metalness ?? CONSTANTS.BOX_MATERIAL.METALNESS,
   });
 
   const box = new THREE.Mesh(geometry, material);

@@ -3,6 +3,7 @@ export const SCENE_BACKGROUND_COLOR = 0x2a2a2a;
 
 export * from "./camera";
 export * from "./ground";
+export * from "./backgroundObjects";
 
 
 
@@ -112,74 +113,6 @@ export const AUTO_CAMERA = {
    */
   HEIGHT_OFFSET: 3,
 } as const;
-
-// ============================================
-// 테이블 설정
-// ============================================
-
-/**
- * 테이블 크기 (가로 x 높이 x 세로)
- */
-export const BOX_SIZE = {
-  /**
-   * 테이블 길이 (가로)
-   * - 마네킹 크기보다 충분히 커야 함
-   */
-  WIDTH: 10.0,
-
-  /**
-   * 테이블 두께 (높이)
-   */
-  HEIGHT: 2,
-
-  /**
-   * 테이블 깊이 (세로)
-   */
-  DEPTH: 2,
-} as const;
-
-/**
- * 테이블 위치
- */
-export const BOX_POSITION = {
-  /**
-   * 테이블의 Y 위치 (높이)
-   * - 0: 바닥
-   * - 양수: 바닥에서 위로
-   */
-  Y: 0,
-} as const;
-
-/**
- * 테이블 재질 설정
- */
-export const BOX_MATERIAL = {
-  /**
-   * 테이블 색상 (16진수 컬러 코드)
-   * - 0x8b7355: 나무색 (밝은 갈색)
-   * - 0x654321: 어두운 나무색
-   * - 0xA0522D: 시에나 (적갈색)
-   */
-  COLOR: 0x8b7355,
-
-  /**
-   * 거칠기 (0.0 ~ 1.0)
-   * - 0.7: 나무 재질의 적당한 거칠기
-   */
-  ROUGHNESS: 0.7,
-
-  /**
-   * 금속성 (0.0 ~ 1.0)
-   * - 0.0: 나무는 비금속
-   */
-  METALNESS: 0.0,
-} as const;
-
-/**
- * 마네킹이 테이블 위에 놓이는 높이 오프셋
- * - 테이블 위치 + 테이블 두께/2 + 이 값 = 마네킹 바닥 위치
- */
-export const MANIKIN_BOX_OFFSET = 0.05;
 
 // ============================================
 // 포스터 설정
