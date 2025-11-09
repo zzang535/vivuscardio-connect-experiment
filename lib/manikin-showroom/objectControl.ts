@@ -1,5 +1,9 @@
 import * as THREE from 'three';
 import * as CONSTANTS from './constants';
+
+const DEFAULT_BOX_HEIGHT = 2;
+const DEFAULT_BOX_DEPTH = 2;
+const DEFAULT_BOX_POSITION_Y = 0;
 import { ModelType } from './modelTypes';
 
 interface GhostCreationOptions {
@@ -20,9 +24,9 @@ export function createGhostBox(
 ): THREE.Mesh {
   // 모델 타입이 주어지면 해당 크기 사용, 아니면 기본값
   const placementDimensions = modelType?.dimensions || {
-    width: CONSTANTS.BOX_SIZE.DEPTH,
-    height: CONSTANTS.BOX_SIZE.HEIGHT,
-    depth: CONSTANTS.BOX_SIZE.DEPTH,
+    width: DEFAULT_BOX_DEPTH,
+    height: DEFAULT_BOX_HEIGHT,
+    depth: DEFAULT_BOX_DEPTH,
   };
   const previewDimensions = modelType?.previewDimensions || placementDimensions;
 
@@ -190,7 +194,7 @@ export function placeObjectOnGrid(
   const snappedPosition = snapToGrid(position, gridSize);
   object.position.set(
     snappedPosition.x,
-    CONSTANTS.GROUND_POSITION.Y + CONSTANTS.BOX_SIZE.HEIGHT / 2,
+    CONSTANTS.GROUND_POSITION.Y + DEFAULT_BOX_HEIGHT / 2,
     snappedPosition.z
   );
 }
@@ -230,9 +234,9 @@ export function addBoxToScene(
 ): THREE.Mesh {
   // 테이블과 유사한 크기 및 재질의 박스 생성
   const boxGeometry = new THREE.BoxGeometry(
-    CONSTANTS.BOX_SIZE.DEPTH, // width
-    CONSTANTS.BOX_SIZE.HEIGHT, // height
-    CONSTANTS.BOX_SIZE.DEPTH // depth
+    DEFAULT_BOX_DEPTH, // width
+    DEFAULT_BOX_HEIGHT, // height
+    DEFAULT_BOX_DEPTH // depth
   );
   const boxMaterial = new THREE.MeshStandardMaterial({
     color: 0xcccccc, // 밝은 회색
@@ -253,7 +257,7 @@ export function addBoxToScene(
   const position = camera.position.clone().add(cameraDirection.multiplyScalar(distance));
 
   // 바닥에 떨어지지 않도록 높이 조절
-  position.y = CONSTANTS.BOX_POSITION.Y + CONSTANTS.BOX_SIZE.HEIGHT / 2 + 2;
+  position.y = DEFAULT_BOX_POSITION_Y + DEFAULT_BOX_HEIGHT / 2 + 2;
 
   newBox.position.copy(position);
 

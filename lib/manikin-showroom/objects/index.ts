@@ -9,6 +9,10 @@ import * as CONSTANTS from "../constants";
 export * from "./logoBanner";
 export * from "./boxGeometry";
 
+const BOX_HEIGHT = 2;
+const BOX_DEPTH = 2;
+const BOX_POSITION_Y = 0;
+
 /**
  * Canvas를 사용하여 텍스트 텍스처 생성
  * @param title 상단에 표시할 제목 (큰 폰트)
@@ -91,13 +95,13 @@ export function createPoster(
   const poster = new THREE.Mesh(geometry, material);
 
   // 테이블 앞면에 배치 (테이블 면 안쪽으로 딱 붙임)
-  const tableTopY = CONSTANTS.BOX_POSITION.Y + CONSTANTS.BOX_SIZE.HEIGHT / 2;
+  const tableTopY = BOX_POSITION_Y + BOX_HEIGHT / 2;
   const posterY = tableTopY + CONSTANTS.POSTER_STYLE.HEIGHT_OFFSET;
   
   // 테이블 회전 각도를 고려하여 포스터 위치 계산
   // 회전이 없으면: Z = DEPTH/2 위치 (앞면, 정면에서 보임)
   // 90도 회전이면: X축 양의 방향으로 이동 (오른쪽 면, 정면에서 보임)
-  const tableDepthHalf = CONSTANTS.BOX_SIZE.DEPTH / 2;
+  const tableDepthHalf = BOX_DEPTH / 2;
   const offset = tableDepthHalf - CONSTANTS.POSTER_STYLE.FRONT_OFFSET;
   
   // 회전 각도를 0~2π 범위로 정규화
@@ -255,7 +259,7 @@ export function positionManikinOnTable(manikin: THREE.Object3D, xPosition: numbe
   console.log("Model size:", size.x.toFixed(2), size.y.toFixed(2), size.z.toFixed(2));
 
   // 테이블 상단 위치 계산
-  const tableTopY = CONSTANTS.BOX_POSITION.Y + CONSTANTS.BOX_SIZE.HEIGHT / 2;
+  const tableTopY = BOX_POSITION_Y + BOX_HEIGHT / 2;
 
   // 마네킹을 지정된 X 위치에 배치, Y축은 테이블 위에 딱 붙도록 조정
   // 마네킹의 바닥(bottom) = center.y - size.y / 2
@@ -274,19 +278,19 @@ export function positionManikinOnTable(manikin: THREE.Object3D, xPosition: numbe
 /**
  * 여러 마네킹을 테이블 위에 일정 간격으로 배치
  * @param manikins 마네킹 Object3D 배열
- * @param tableWidth 테이블 너비 (기본값: BOX_SIZE.WIDTH)
+ * @param tableWidth 테이블 너비 (기본값: 10)
  * @returns 배치된 마네킹들의 중심 Y 좌표와 X 위치 배열
  */
 export function positionMultipleManikinsOnTable(
   manikins: THREE.Object3D[],
-  tableWidth: number = CONSTANTS.BOX_SIZE.WIDTH
+  tableWidth: number = 10
 ): { centerY: number; positions: number[] } {
   if (manikins.length === 0) return { centerY: 0, positions: [] };
 
   // 첫 번째 마네킹의 크기로 계산 (모든 마네킹이 같은 크기라고 가정)
   const box = new THREE.Box3().setFromObject(manikins[0]);
   const size = box.getSize(new THREE.Vector3());
-  const tableTopY = CONSTANTS.BOX_POSITION.Y + CONSTANTS.BOX_SIZE.HEIGHT / 2;
+  const tableTopY = BOX_POSITION_Y + BOX_HEIGHT / 2;
 
   // 테이블 사용 가능한 공간 (여백 포함)
   const usableWidth = tableWidth * 0.8; // 테이블의 80% 사용
@@ -342,7 +346,7 @@ export function autoAdjustCamera({
   manikinPositions,
 }: AutoAdjustCameraOptions): void {
   // 전체 씬의 높이 고려 (테이블 + 마네킹)
-  const totalHeight = manikinSize.y + CONSTANTS.BOX_SIZE.HEIGHT + CONSTANTS.MANIKIN_BOX_OFFSET;
+  const totalHeight = manikinSize.y + BOX_HEIGHT + CONSTANTS.MANIKIN_BOX_OFFSET;
   const maxDim = Math.max(manikinSize.x, totalHeight, manikinSize.z);
   console.log("Max dimension:", maxDim.toFixed(2));
 
