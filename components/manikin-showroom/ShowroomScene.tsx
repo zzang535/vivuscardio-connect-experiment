@@ -46,6 +46,7 @@ import ModelSelector from "./editor/ModelSelector";
 import MouseControlGuide from "./camera/MouseControlGuide";
 import Camera360Button from "./action/Camera360Button";
 import IPadModal from "./modal/IPadModal";
+import LoadingOverlay from "./LoadingOverlay";
 
 export default function ShowroomScene() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -486,19 +487,10 @@ export default function ShowroomScene() {
       container.removeChild(container.firstChild);
     }
 
-    console.log("=== Three.js Scene Initialization ===");
-    console.log(
-      "Container dimensions:",
-      container.clientWidth,
-      "x",
-      container.clientHeight
-    );
-
     // Scene 설정
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(CONSTANTS.SCENE_BACKGROUND_COLOR);
     sceneRef.current = scene;
-    console.log("Scene created");
 
     // Camera 설정
     const camera = new THREE.PerspectiveCamera(
@@ -518,12 +510,6 @@ export default function ShowroomScene() {
       CONSTANTS.INITIAL_CAMERA_TARGET.Z
     );
     cameraRef.current = camera;
-    console.log(
-      "Camera created at position:",
-      camera.position.x,
-      camera.position.y,
-      camera.position.z
-    );
 
     // Renderer 설정
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -540,12 +526,6 @@ export default function ShowroomScene() {
 
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
-    console.log("Renderer created and added to DOM");
-    console.log("Canvas element:", renderer.domElement);
-    console.log(
-      "Canvas in container:",
-      container.contains(renderer.domElement)
-    );
 
     // OrbitControls 설정
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -590,45 +570,13 @@ export default function ShowroomScene() {
     controlsRef.current = controls;
     controls.update();
 
-    console.log("OrbitControls initialized:");
-    console.log("- enableZoom:", controls.enableZoom);
-    console.log("- enableRotate:", controls.enableRotate);
-    console.log("- enablePan:", controls.enablePan);
-    console.log("- minDistance:", controls.minDistance);
-    console.log("- maxDistance:", controls.maxDistance);
-    console.log("- minTargetY (panning limit):", minTargetY);
-
     // --- UserInteractionManager 초기화 ---
     // ground가 생성된 후에 초기화해야 하므로 나중에 초기화
     const raycaster = new THREE.Raycaster();
     const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -CONSTANTS.GROUND_POSITION.Y);
 
-    console.log("Event listeners attached to canvas");
-    console.log(
-      "Canvas size:",
-      renderer.domElement.width,
-      "x",
-      renderer.domElement.height
-    );
-    console.log(
-      "Canvas position in DOM:",
-      renderer.domElement.getBoundingClientRect()
-    );
-
     // 캔버스 클릭 테스트
     setTimeout(() => {
-      console.log("=== Testing canvas interaction after 1 second ===");
-      console.log("Canvas parent:", renderer.domElement.parentElement);
-      console.log(
-        "Canvas is visible:",
-        renderer.domElement.offsetParent !== null
-      );
-      console.log("Controls exists:", controlsRef.current !== null);
-      console.log("Controls enabled:", {
-        zoom: controlsRef.current?.enableZoom,
-        rotate: controlsRef.current?.enableRotate,
-        pan: controlsRef.current?.enablePan,
-      });
 
       // 수동으로 이벤트 테스트
       const testClick = new MouseEvent("mousedown", {
@@ -636,7 +584,6 @@ export default function ShowroomScene() {
         clientY: 100,
         button: 0,
       });
-      console.log("Dispatching test mousedown event...");
       renderer.domElement.dispatchEvent(testClick);
     }, 1000);
 
@@ -647,65 +594,32 @@ export default function ShowroomScene() {
     const ground = createGround();
     scene.add(ground);
     groundRef.current = ground;
-    console.log("Ground created at Y:", CONSTANTS.GROUND_POSITION.Y);
 
         // 그리드 및 좌표계 생성
-
         const grid = createGrid(
-
           CONSTANTS.GROUND_SIZE.WIDTH,
-
           CONSTANTS.GROUND_SIZE.WIDTH
-
         );
 
         const axesHelper = createAxesHelper(10);
-
         const axesLabels = createAxesLabels(10);
-
         const coordinateLabels = createCoordinateLabels(
-
           scene,
-
           CONSTANTS.GROUND_SIZE.WIDTH,
-
           5
-
         );
-
-    
 
         coordinateObjectsRef.current = [
-
           grid,
-
           axesHelper,
-
           ...axesLabels,
-
           ...coordinateLabels,
-
         ];
 
-    
-
         coordinateObjectsRef.current.forEach((obj) => {
-
           scene.add(obj);
-
           obj.visible = showCoordinates;
-
         });
-
-    
-
-        console.log(
-
-          "Coordinate objects created and visibility set to:",
-
-          showCoordinates
-
-        );
 
     // 모든 객체 로딩 상태 초기화
     loadingStateRef.current = {
@@ -757,12 +671,6 @@ export default function ShowroomScene() {
       CONSTANTS.TABLE_SIZE.DEPTH
     );
     scene.add(table1);
-    console.log(
-      "Table 1 created at Y:",
-      CONSTANTS.TABLE_POSITION.Y,
-      "width:",
-      table1Width
-    );
 
     // 두 번째 테이블 생성 (세로 방향, L자 형태로 배치, 길이는 반으로)
     // const table2Width = table1Width / 2; // 첫 번째 테이블 길이의 /
@@ -795,13 +703,6 @@ export default function ShowroomScene() {
     }
 
     scene.add(table2);
-    console.log(
-      "Table 2 created (half width) at X:",
-      table1HalfWidth + table2RotatedWidth,
-      "Z:",
-      -CONSTANTS.TABLE_SIZE.DEPTH / 2,
-      "rotation: 90deg, color: red (#B01A1A)"
-    );
 
     // OBJ 모델 로드 (마네킹 5개)
     const loader = new OBJLoader();
@@ -1343,60 +1244,7 @@ export default function ShowroomScene() {
       />
 
       {/* 로딩 화면 */}
-      {isLoading && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100vw",
-            height: "100vh",
-            backgroundColor: "rgba(42, 42, 42, 0.9)",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 9999,
-            color: "#ffffff",
-          }}
-        >
-          {/* 로딩 스피너 */}
-          <div
-            style={{
-              width: "50px",
-              height: "50px",
-              border: "4px solid rgba(255, 255, 255, 0.3)",
-              borderTop: "4px solid #ffffff",
-              borderRadius: "50%",
-              animation: "spin 1s linear infinite",
-              marginBottom: "20px",
-            }}
-          />
-
-          {/* 로딩 텍스트 */}
-          <div
-            style={{
-              fontSize: "18px",
-              fontWeight: "500",
-              letterSpacing: "0.5px",
-            }}
-          >
-            Loading 3D Models...
-          </div>
-
-          {/* CSS 애니메이션 */}
-          <style jsx>{`
-            @keyframes spin {
-              0% {
-                transform: rotate(0deg);
-              }
-              100% {
-                transform: rotate(360deg);
-              }
-            }
-          `}</style>
-        </div>
-      )}
+      {isLoading && <LoadingOverlay />}
     </>
   );
 }
