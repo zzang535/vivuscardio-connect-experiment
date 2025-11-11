@@ -211,25 +211,28 @@ export function setupLights(scene: THREE.Scene): void {
   scene.add(fillLight2);
 }
 
-/**
- * 마네킹용 재질 생성
- * @returns Three.js MeshStandardMaterial
- */
-export function createManikinMaterial(): THREE.MeshStandardMaterial {
-  return new THREE.MeshStandardMaterial({
-    color: CONSTANTS.MANIKIN_MATERIAL.COLOR,
-    roughness: CONSTANTS.MANIKIN_MATERIAL.ROUGHNESS,
-    metalness: CONSTANTS.MANIKIN_MATERIAL.METALNESS,
-  });
-}
+type ManikinMaterialOptions = {
+  material?: THREE.Material;
+} & Partial<Pick<THREE.MeshStandardMaterialParameters, "color" | "roughness" | "metalness">>;
 
 /**
- * 단일 마네킹 객체 생성
+ * 단일 마네킹 객체 생성 (재질 생성 포함)
  * @param template 원본 마네킹 3D 객체
- * @param material 적용할 재질
+ * @param options 재질 옵션 또는 기존 재질
  * @returns 생성된 마네킹 3D 객체
  */
-export function createManikin(template: THREE.Object3D, material: THREE.Material): THREE.Object3D {
+export function createManikin(
+  template: THREE.Object3D,
+  options: ManikinMaterialOptions = {}
+): THREE.Object3D {
+  const material =
+    options.material ??
+    new THREE.MeshStandardMaterial({
+      color: options.color ?? CONSTANTS.MANIKIN_MATERIAL.COLOR,
+      roughness: options.roughness ?? CONSTANTS.MANIKIN_MATERIAL.ROUGHNESS,
+      metalness: options.metalness ?? CONSTANTS.MANIKIN_MATERIAL.METALNESS,
+    });
+
   const manikin = template.clone();
 
   manikin.traverse((node) => {
@@ -275,40 +278,46 @@ export function positionManikinOnTable(manikin: THREE.Object3D, xPosition: numbe
   return tableTopY + size.y / 2;
 }
 
+type BackgroundManikinLayout = ReadonlyArray<(typeof CONSTANTS.BACKGROUND_MANIKINS)[number]>;
+
 /**
- * 여러 마네킹을 테이블 위에 일정 간격으로 배치
+ * 여러 마네킹을 고정된 좌표에 배치
  * @param manikins 마네킹 Object3D 배열
- * @param tableWidth 테이블 너비 (기본값: 10)
+ * @param layout 사전 정의된 마네킹 레이아웃
  * @returns 배치된 마네킹들의 중심 Y 좌표와 X 위치 배열
  */
 export function positionMultipleManikinsOnTable(
   manikins: THREE.Object3D[],
-  tableWidth: number = 10
+  layout: BackgroundManikinLayout = CONSTANTS.BACKGROUND_MANIKINS
 ): { centerY: number; positions: number[] } {
   if (manikins.length === 0) return { centerY: 0, positions: [] };
 
-  // 첫 번째 마네킹의 크기로 계산 (모든 마네킹이 같은 크기라고 가정)
+  const fallbackLayout =
+    layout[layout.length - 1] ?? {
+      id: "fallback-manikin",
+      position: { x: 0, y: 0, z: 0 },
+      rotationY: 0,
+      tableId: "MAIN",
+    };
+
   const box = new THREE.Box3().setFromObject(manikins[0]);
   const size = box.getSize(new THREE.Vector3());
   const tableTopY = BOX_POSITION_Y + BOX_HEIGHT / 2;
 
-  // 테이블 사용 가능한 공간 (여백 포함)
-  const usableWidth = tableWidth * 0.8; // 테이블의 80% 사용
-  
-  // 마네킹 간격 계산 (균등하게 배치)
-  const spacing = usableWidth / (manikins.length - 1 || 1);
-  const startX = -usableWidth / 2;
-
   const positions: number[] = [];
 
-  // 각 마네킹 배치
   manikins.forEach((manikin, index) => {
-    const xPosition = startX + (index * spacing);
+    const config = layout[index] ?? fallbackLayout;
+    const xPosition = config.position.x;
     positionManikinOnTable(manikin, xPosition);
+    if (config.position.z !== undefined) {
+      manikin.position.z = config.position.z;
+    }
+    if (config.rotationY !== undefined) {
+      manikin.rotation.y = config.rotationY;
+    }
     positions.push(xPosition);
   });
-
-  console.log(`Positioned ${manikins.length} manikins on table width ${tableWidth} with spacing: ${spacing.toFixed(2)}`);
 
   return { centerY: tableTopY + size.y / 2, positions };
 }

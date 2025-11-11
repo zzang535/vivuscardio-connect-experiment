@@ -12,7 +12,6 @@ import {
   createGround,
   createBoxGeometry,
   setupLights,
-  createManikinMaterial,
   createManikin,
   positionMultipleManikinsOnTable,
   autoAdjustCamera,
@@ -294,12 +293,9 @@ export default function ShowroomScene({
       });
       newObject = new THREE.Mesh(geometry, material);
     } else if (modelType.type === 'model' && manikinTemplateRef.current) {
-      const material = new THREE.MeshStandardMaterial({
+      newObject = createManikin(manikinTemplateRef.current, {
         color: modelType.color,
-        roughness: CONSTANTS.MANIKIN_MATERIAL.ROUGHNESS,
-        metalness: CONSTANTS.MANIKIN_MATERIAL.METALNESS,
       });
-      newObject = createManikin(manikinTemplateRef.current, material);
     }
 
     if (newObject) {
@@ -418,12 +414,7 @@ export default function ShowroomScene({
             console.warn('Manikin template not ready. Skipping stored model', data.id);
             return;
           }
-          const material = new THREE.MeshStandardMaterial({
-            color,
-            roughness: CONSTANTS.MANIKIN_MATERIAL.ROUGHNESS,
-            metalness: CONSTANTS.MANIKIN_MATERIAL.METALNESS,
-          });
-          restoredObject = createManikin(manikinTemplateRef.current, material);
+          restoredObject = createManikin(manikinTemplateRef.current, { color });
         }
 
         if (!restoredObject) {
@@ -695,9 +686,6 @@ export default function ShowroomScene({
     // OBJ 모델 로드 (마네킹 5개)
     const loader = new OBJLoader();
 
-    // 마네킹용 재질 생성
-    const manikinMaterial = createManikinMaterial();
-
     loader.load(
       ASSETS.MANIKIN_MODEL_PATH,
       (object) => {
@@ -709,7 +697,7 @@ export default function ShowroomScene({
         const MANIKIN_COUNT = 5;
 
         for (let i = 0; i < MANIKIN_COUNT; i++) {
-          const manikin = createManikin(object, manikinMaterial);
+          const manikin = createManikin(object);
           manikins.push(manikin);
           scene.add(manikin);
         }
@@ -720,22 +708,28 @@ export default function ShowroomScene({
         const { centerY, positions } =
           positionMultipleManikinsOnTable(manikins);
 
-        // 각 마네킹 앞에 포스터 생성 및 배치
-        positions.forEach((xPosition, index) => {
-          const manikinInfo = TEXT.MANIKIN_INFO[index];
-          if (manikinInfo) {
-            const poster = createPoster(
-              manikinInfo.name,
-              manikinInfo.description,
-              xPosition
-            );
-            scene.add(poster);
-            console.log(
-              `Created poster for ${manikinInfo.name} at X: ${xPosition.toFixed(
-                2
-              )}`
-            );
-          }
+        // 포스터를 사전 정의된 절대 좌표에 배치
+        CONSTANTS.BACKGROUND_POSTERS.forEach((posterConfig) => {
+          const manikinInfo = TEXT.MANIKIN_INFO[posterConfig.manikinInfoIndex];
+          if (!manikinInfo) return;
+
+          const tableId = posterConfig.tableId ?? "MAIN";
+          const tableConfig =
+            CONSTANTS.BACKGROUND_TABLES[tableId as keyof typeof CONSTANTS.BACKGROUND_TABLES] ??
+            mainTableConfig;
+
+          const poster = createPoster(
+            manikinInfo.name,
+            manikinInfo.description,
+            posterConfig.positionX,
+            tableConfig.rotationY,
+            tableConfig.position.z
+          );
+
+          scene.add(poster);
+          console.log(
+            `Created poster for ${manikinInfo.name} at X: ${posterConfig.positionX.toFixed(2)}`
+          );
         });
 
         // 모든 마네킹을 포함하는 전체 크기 계산
