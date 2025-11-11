@@ -1,9 +1,8 @@
 "use client";
 
-import { useLoader } from "@react-three/fiber";
-import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
+import { useGLTF, useAnimations } from "@react-three/drei";
+import { useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import * as THREE from "three";
-import { useMemo } from "react";
 
 interface ManikinModelProps {
   position?: [number, number, number];
@@ -11,43 +10,71 @@ interface ManikinModelProps {
   color?: THREE.ColorRepresentation;
 }
 
-export default function ManikinModel({
-  position = [0, 0, 0],
-  rotation = [0, 0, 0],
-  color = 0xcccccc,
-}: ManikinModelProps) {
-  // OBJ 파일 로드
-  const obj = useLoader(OBJLoader, "/manikin-showroom/manikin.obj");
-
-  // 재질 생성 (메모이제이션)
-  const material = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color,
-        roughness: 0.8,
-        metalness: 0.2,
-      }),
-    [color]
-  );
-
-  // 복제된 객체 생성 및 재질 적용
-  const manikin = useMemo(() => {
-    const cloned = obj.clone();
-    cloned.traverse((node) => {
-      if (node instanceof THREE.Mesh) {
-        node.material = material;
-        node.castShadow = true;
-        node.receiveShadow = true;
-      }
-    });
-    return cloned;
-  }, [obj, material]);
-
-  return (
-    <primitive
-      object={manikin}
-      position={position}
-      rotation={rotation}
-    />
-  );
+export interface ManikinModelRef {
+  playAnimation: () => void;
+  stopAnimation: () => void;
 }
+
+const ManikinModel = forwardRef<ManikinModelRef, ManikinModelProps>(
+  ({ position = [0, 0, 0], rotation = [0, 0, 0], color = 0xcccccc }, ref) => {
+    const group = useRef<THREE.Group>(null);
+
+    // GLB 파일 로드
+    const { scene, animations } = useGLTF(
+      "/manikin-showroom-virtual/manikin-with-ani.glb"
+    );
+
+    // 애니메이션 설정
+    const { actions, names } = useAnimations(animations, group);
+
+    // 재질 적용
+    useEffect(() => {
+      if (scene) {
+        scene.traverse((node) => {
+          if (node instanceof THREE.Mesh) {
+            node.material = new THREE.MeshStandardMaterial({
+              color,
+              roughness: 0.8,
+              metalness: 0.2,
+            });
+            node.castShadow = true;
+            node.receiveShadow = true;
+          }
+        });
+      }
+    }, [scene, color]);
+
+    // 외부에서 애니메이션 제어할 수 있도록 ref 노출
+    useImperativeHandle(ref, () => ({
+      playAnimation: () => {
+        if (names.length > 0 && actions[names[0]]) {
+          const action = actions[names[0]];
+          if (action) {
+            action.reset();
+            action.setLoop(THREE.LoopOnce, 1);
+            action.clampWhenFinished = true;
+            action.play();
+          }
+        }
+      },
+      stopAnimation: () => {
+        if (names.length > 0 && actions[names[0]]) {
+          actions[names[0]]?.stop();
+        }
+      },
+    }));
+
+    return (
+      <group ref={group} position={position} rotation={rotation}>
+        <primitive object={scene.clone()} />
+      </group>
+    );
+  }
+);
+
+ManikinModel.displayName = "ManikinModel";
+
+export default ManikinModel;
+
+// GLB 파일 프리로드
+useGLTF.preload("/manikin-showroom-virtual/manikin-with-ani.glb");

@@ -14,7 +14,6 @@ export default function IntroScene({ isActive, onComplete }: IntroSceneProps) {
   const startTime = useRef<number>(0);
   const hasStarted = useRef(false);
   const hasCompleted = useRef(false);
-  const lightRef = useRef<THREE.SpotLight | null>(null);
 
   // 인트로 시작 시 초기화
   useEffect(() => {
@@ -22,33 +21,13 @@ export default function IntroScene({ isActive, onComplete }: IntroSceneProps) {
       hasStarted.current = true;
       startTime.current = Date.now();
 
-      // 배경을 어둡게 설정
-      scene.background = new THREE.Color(0x1a1a1a);
-
-      // 스포트라이트 생성 (처음엔 꺼진 상태)
-      if (!lightRef.current) {
-        const spotlight = new THREE.SpotLight(0xffffff, 0, 15, Math.PI / 6, 0.5, 1);
-        spotlight.position.set(0, 8, 0);
-        spotlight.target.position.set(0, 0, 0);
-        spotlight.castShadow = true;
-        scene.add(spotlight);
-        scene.add(spotlight.target);
-        lightRef.current = spotlight;
-      }
+      // 배경을 밝게 설정
+      scene.background = new THREE.Color(0xf0f0f0);
 
       // 카메라 초기 위치 (가까운 정면)
       camera.position.set(0, 1.5, 3);
       camera.lookAt(0, 1, 0);
     }
-
-    return () => {
-      // 정리
-      if (!isActive && lightRef.current) {
-        scene.remove(lightRef.current);
-        scene.remove(lightRef.current.target);
-        lightRef.current = null;
-      }
-    };
   }, [isActive, camera, scene]);
 
   // 애니메이션 프레임
@@ -63,9 +42,6 @@ export default function IntroScene({ isActive, onComplete }: IntroSceneProps) {
       hasCompleted.current = true;
 
       // 최종 상태 설정 (오비트 마지막 위치)
-      if (lightRef.current) {
-        lightRef.current.intensity = 10; // 더 밝게
-      }
       const finalAngle = Math.PI * 2; // 360도
       const radius = 2;
       camera.position.x = Math.sin(finalAngle) * radius; // 0
@@ -75,26 +51,6 @@ export default function IntroScene({ isActive, onComplete }: IntroSceneProps) {
 
       onComplete();
       return;
-    }
-
-    // 조명 페이드인 (0초 ~ 2초)
-    if (elapsed < 2) {
-      if (lightRef.current) {
-        lightRef.current.intensity = THREE.MathUtils.lerp(0, 3, elapsed / 2);
-      }
-    }
-    // 조명 밝아지기 (5초 ~ 13초) - 더 밝게
-    else if (elapsed >= 5) {
-      if (lightRef.current) {
-        const brightenProgress = (elapsed - 5) / 8;
-        lightRef.current.intensity = THREE.MathUtils.lerp(3, 10, brightenProgress);
-      }
-    }
-    // 조명 유지 (2초 ~ 5초)
-    else {
-      if (lightRef.current) {
-        lightRef.current.intensity = 3;
-      }
     }
 
     // 카메라 줌인 (2초 ~ 5초)
