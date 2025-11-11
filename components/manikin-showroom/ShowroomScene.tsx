@@ -5,7 +5,6 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import * as CONSTANTS from "@/lib/manikin-showroom/constants";
-import * as TEXT from "@/lib/manikin-showroom/texts";
 import * as ASSETS from "@/lib/manikin-showroom/assets";
 import { CAMERA_TOUR_MUSIC_PATH } from "@/lib/manikin-showroom/assets";
 import {
@@ -14,6 +13,7 @@ import {
   setupLights,
   createManikin,
   positionMultipleManikinsOnTable,
+  getBackgroundManikinLayoutInfo,
   autoAdjustCamera,
   createPoster,
   loadAEDModelOnTable,
@@ -23,6 +23,7 @@ import {
   createAxesHelper,
   createAxesLabels,
   createCoordinateLabels,
+  createPosterAtPosition,
 } from "@/lib/manikin-showroom/objects";
 import {
   type AutoMoveState,
@@ -704,31 +705,25 @@ export default function ShowroomScene({
 
         console.log(`Created ${MANIKIN_COUNT} manikins`);
 
-        // 마네킹들을 테이블 위에 일정 간격으로 배치
+        // 마네킹들을 테이블 위에 절대 좌표로 배치
+        positionMultipleManikinsOnTable(manikins);
         const { centerY, positions } =
-          positionMultipleManikinsOnTable(manikins);
+          getBackgroundManikinLayoutInfo(manikins);
 
         // 포스터를 사전 정의된 절대 좌표에 배치
         CONSTANTS.BACKGROUND_POSTERS.forEach((posterConfig) => {
-          const manikinInfo = TEXT.MANIKIN_INFO[posterConfig.manikinInfoIndex];
-          if (!manikinInfo) return;
-
-          const tableId = posterConfig.tableId ?? "MAIN";
-          const tableConfig =
-            CONSTANTS.BACKGROUND_TABLES[tableId as keyof typeof CONSTANTS.BACKGROUND_TABLES] ??
-            mainTableConfig;
-
-          const poster = createPoster(
-            manikinInfo.name,
-            manikinInfo.description,
-            posterConfig.positionX,
-            tableConfig.rotationY,
-            tableConfig.position.z
+          const poster = createPosterAtPosition(
+            posterConfig.title,
+            posterConfig.description,
+            posterConfig.position,
+            posterConfig.rotationY
           );
 
           scene.add(poster);
           console.log(
-            `Created poster for ${manikinInfo.name} at X: ${posterConfig.positionX.toFixed(2)}`
+            `Created poster for ${posterConfig.title} at (${posterConfig.position.x.toFixed(
+              2
+            )}, ${posterConfig.position.y.toFixed(2)}, ${posterConfig.position.z.toFixed(2)})`
           );
         });
 

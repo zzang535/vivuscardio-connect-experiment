@@ -65,8 +65,23 @@ function createTextTexture(title: string, description: string): THREE.CanvasText
   return texture;
 }
 
+function buildPosterMesh(title: string, description: string): THREE.Mesh {
+  const geometry = new THREE.PlaneGeometry(
+    CONSTANTS.POSTER_SIZE.WIDTH,
+    CONSTANTS.POSTER_SIZE.HEIGHT
+  );
+
+  const texture = createTextTexture(title, description);
+  const material = new THREE.MeshStandardMaterial({
+    map: texture,
+    transparent: false,
+  });
+
+  return new THREE.Mesh(geometry, material);
+}
+
 /**
- * 포스터 메쉬 생성
+ * 포스터 메쉬 생성 (테이블 기준 배치)
  * @param title 포스터 상단에 표시할 제목 (큰 폰트)
  * @param description 포스터 하단에 표시할 설명 (작은 폰트)
  * @param positionX X 위치 (마네킹 위치에 맞춤)
@@ -81,18 +96,7 @@ export function createPoster(
   tableRotationY: number = 0,
   tablePositionZ: number = 0
 ): THREE.Mesh {
-  const geometry = new THREE.PlaneGeometry(
-    CONSTANTS.POSTER_SIZE.WIDTH,
-    CONSTANTS.POSTER_SIZE.HEIGHT
-  );
-
-  const texture = createTextTexture(title, description);
-  const material = new THREE.MeshStandardMaterial({
-    map: texture,
-    transparent: false,
-  });
-
-  const poster = new THREE.Mesh(geometry, material);
+  const poster = buildPosterMesh(title, description);
 
   // 테이블 앞면에 배치 (테이블 면 안쪽으로 딱 붙임)
   const tableTopY = BOX_POSITION_Y + BOX_HEIGHT / 2;
@@ -139,6 +143,25 @@ export function createPoster(
     poster.rotation.y = 0;
   }
 
+  return poster;
+}
+
+/**
+ * 포스터 메쉬 생성 (절대 좌표 배치)
+ * @param title 포스터 상단에 표시할 제목
+ * @param description 포스터 설명
+ * @param position 월드 좌표
+ * @param rotationY Y축 회전 값
+ */
+export function createPosterAtPosition(
+  title: string,
+  description: string,
+  position: { x: number; y: number; z: number },
+  rotationY: number = 0
+): THREE.Mesh {
+  const poster = buildPosterMesh(title, description);
+  poster.position.set(position.x, position.y, position.z);
+  poster.rotation.y = rotationY;
   return poster;
 }
 
@@ -318,6 +341,27 @@ export function positionMultipleManikinsOnTable(
     }
     positions.push(xPosition);
   });
+
+  return { centerY: tableTopY + size.y / 2, positions };
+}
+
+/**
+ * BACKGROUND_MANIKINS 기반 카메라 보조 정보 계산
+ * @param manikins 배치된 마네킹 목록 (첫 번째 항목으로 높이 계산)
+ * @param layout 사전 정의된 레이아웃
+ */
+export function getBackgroundManikinLayoutInfo(
+  manikins: THREE.Object3D[],
+  layout: BackgroundManikinLayout = CONSTANTS.BACKGROUND_MANIKINS
+): { centerY: number; positions: number[] } {
+  const positions = layout.map((config) => config.position.x);
+  if (manikins.length === 0) {
+    return { centerY: 0, positions };
+  }
+
+  const box = new THREE.Box3().setFromObject(manikins[0]);
+  const size = box.getSize(new THREE.Vector3());
+  const tableTopY = BOX_POSITION_Y + BOX_HEIGHT / 2;
 
   return { centerY: tableTopY + size.y / 2, positions };
 }

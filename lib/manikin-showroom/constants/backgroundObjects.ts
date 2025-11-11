@@ -70,18 +70,49 @@ export const BACKGROUND_MANIKINS: readonly BackgroundManikinConfig[] = [
 
 export type BackgroundPosterConfig = {
   id: string;
-  /** TEXT.MANIKIN_INFO 참조 인덱스 */
-  manikinInfoIndex: number;
-  /** 포스터 X 위치 */
-  positionX: number;
-  /** 포스터가 붙을 테이블 (기본값: MAIN) */
-  tableId?: keyof typeof BACKGROUND_TABLES;
+  title: string;
+  description: string;
+  position: { x: number; y: number; z: number };
+  rotationY: number;
 };
 
+const POSTER_DEFAULT_Y = 0.3;
+const POSTER_MAIN_Z = 1.1;
+
 export const BACKGROUND_POSTERS: readonly BackgroundPosterConfig[] = [
-  { id: "poster-01", manikinInfoIndex: 0, positionX: -4.8, tableId: "MAIN" },
-  { id: "poster-02", manikinInfoIndex: 1, positionX: -2.4, tableId: "MAIN" },
-  { id: "poster-03", manikinInfoIndex: 2, positionX: 0, tableId: "MAIN" },
-  { id: "poster-04", manikinInfoIndex: 3, positionX: 2.4, tableId: "MAIN" },
-  { id: "poster-05", manikinInfoIndex: 4, positionX: 4.8, tableId: "MAIN" },
+  {
+    id: "poster-01",
+    title: "IM16-R",
+    description: "Adult CPR Training Manikin\nHigh-quality materials\nRealistic anatomy",
+    position: { x: -4.8, y: POSTER_DEFAULT_Y, z: POSTER_MAIN_Z },
+    rotationY: 0,
+  },
+  {
+    id: "poster-02",
+    title: "IM16-JHS",
+    description: "Junior High School Manikin\nPerfect for training\nDurable construction",
+    position: { x: -2.4, y: POSTER_DEFAULT_Y, z: POSTER_MAIN_Z },
+    rotationY: 0,
+  },
+  {
+    id: "poster-03",
+    title: "IM16-RO",
+    description: "Infant CPR Manikin\nLife-like features\nEasy to use",
+    position: { x: 0, y: POSTER_DEFAULT_Y, z: POSTER_MAIN_Z },
+    rotationY: 0,
+  },
+  {
+    id: "poster-04",
+    title: "IM17-P",
+    description: "Professional Training Model\nAdvanced features\nIndustry standard",
+    position: { x: 2.4, y: POSTER_DEFAULT_Y, z: POSTER_MAIN_Z },
+    rotationY: 0,
+  },
+  {
+    id: "poster-05",
+    title: "Brayden Pro",
+    description: "Professional CPR Manikin\nPremium quality\nComprehensive training",
+    position: { x: 4.8, y: POSTER_DEFAULT_Y, z: POSTER_MAIN_Z },
+    rotationY: 0,
+  },
 ] as const;
