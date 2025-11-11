@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { redis } from "@/lib/server/redis";
-import type { ShowroomRecord, StoredObjectData } from "@/lib/manikin-showroom/storage";
+import type { ShowroomRecord, StoredObjectData } from "@/lib/manikin-showroom/types";
 
 const KEY_PREFIX = "manikin_showroom";
 

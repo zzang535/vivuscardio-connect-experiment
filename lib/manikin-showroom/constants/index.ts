@@ -4,6 +4,7 @@ export const SCENE_BACKGROUND_COLOR = 0x2a2a2a;
 export * from "./camera";
 export * from "./ground";
 export * from "./backgroundObjects";
+export * from "./objectOptions";
 
 // ============================================
 // 조명 설정

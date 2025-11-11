@@ -10,7 +10,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import React from 'react';
 import { createGhostBox, createPlacementIndicator, alignObjectToPlacement } from './objectControl';
-import { ModelType } from './modelTypes';
+import type { ModelType } from '../types';
 
 /**
  * 인터랙션 컨텍스트 인터페이스

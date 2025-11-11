@@ -2,7 +2,7 @@
 
 import { Color } from "three";
 import { darkenColor } from "@/lib/common/tinycolor";
-import { ModelType } from "@/lib/manikin-showroom/modelTypes";
+import type { ModelType } from "@/lib/manikin-showroom/types";
 
 interface ModelPreviewProps {
   model: ModelType;

@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { IPAD_MODEL_PATH } from "../assets";
+import { IPAD_MODEL_PATH } from "../constants/assets";
 
 /**
  * 클릭 가능 표시를 위한 화살표 생성

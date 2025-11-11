@@ -7,7 +7,7 @@ import { useParams } from "next/navigation";
 import LoadingOverlay from "@/components/manikin-showroom/LoadingOverlay";
 import ErrorOverlay from "@/components/manikin-showroom/ErrorOverlay";
 
-import type { StoredObjectData } from "@/lib/manikin-showroom/storage";
+import type { StoredObjectData } from "@/lib/manikin-showroom/types";
 
 const ShowroomScene = dynamic(
   () => import("@/components/manikin-showroom/ShowroomScene"),

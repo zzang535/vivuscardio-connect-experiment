@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { ModelType } from "@/lib/manikin-showroom/modelTypes";
+import type { ModelType } from "@/lib/manikin-showroom/types";
 import ModelPreview from "./ModelPreview";
 
 interface ModelSelectorProps {

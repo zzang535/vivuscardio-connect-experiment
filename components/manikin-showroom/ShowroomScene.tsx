@@ -4,8 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import * as CONSTANTS from "@/lib/manikin-showroom/constants";
-import * as ASSETS from "@/lib/manikin-showroom/assets";
-import { CAMERA_TOUR_MUSIC_PATH } from "@/lib/manikin-showroom/assets";
+import * as ASSETS from "@/lib/manikin-showroom/constants/assets";
+import { CAMERA_TOUR_MUSIC_PATH } from "@/lib/manikin-showroom/constants/assets";
 import {
   createGround,
   createBoxGeometry,
@@ -27,15 +27,11 @@ import {
   startAutoMove,
   updateAutoMove,
   completeAutoMove,
-} from "@/lib/manikin-showroom/cameraAnimation";
-import {
-  alignObjectToPlacement,
-  snapToGrid,
-  type Dimensions,
-} from "@/lib/manikin-showroom/objectControl";
-import { UserInteractionManager } from "@/lib/manikin-showroom/userInteraction";
-import { AVAILABLE_MODELS, AVAILABLE_MANIKINS, ModelType } from "@/lib/manikin-showroom/modelTypes";
-import type { StoredObjectData } from "@/lib/manikin-showroom/storage";
+} from "@/lib/manikin-showroom/utils/cameraAnimation";
+import { alignObjectToPlacement, snapToGrid } from "@/lib/manikin-showroom/utils/objectControl";
+import { UserInteractionManager } from "@/lib/manikin-showroom/utils/userInteraction";
+import { AVAILABLE_MODELS, AVAILABLE_MANIKINS } from "@/lib/manikin-showroom/constants/objectOptions";
+import type { Dimensions, ModelType, StoredObjectData } from "@/lib/manikin-showroom/types";
 import Editor from "./editor/Editor";
 import PlacementModeGuide from "./guide/PlacementModeGuide";
 import VisitorBadge from "./guide/VisitorBadge";

@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import * as CONSTANTS from './constants';
+import * as CONSTANTS from '../constants';
+import type { Dimensions, ModelType } from '../types';
 
 const DEFAULT_BOX_HEIGHT = 2;
 const DEFAULT_BOX_DEPTH = 2;
 const DEFAULT_BOX_POSITION_Y = 0;
-import { ModelType } from './modelTypes';
 
 interface GhostCreationOptions {
   modelTemplate?: THREE.Object3D | null;
@@ -197,12 +197,6 @@ export function placeObjectOnGrid(
     0 + DEFAULT_BOX_HEIGHT / 2,
     snappedPosition.z
   );
-}
-
-export interface Dimensions {
-  width: number;
-  height: number;
-  depth: number;
 }
 
 export function alignObjectToPlacement(
