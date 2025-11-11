@@ -15,7 +15,6 @@ import {
   positionMultipleManikinsOnTable,
   getBackgroundManikinLayoutInfo,
   autoAdjustCamera,
-  createPoster,
   loadAEDModelOnTable,
   loadIPadModelOnTable,
   createLogoBanner,
@@ -720,11 +719,6 @@ export default function ShowroomScene({
           );
 
           scene.add(poster);
-          console.log(
-            `Created poster for ${posterConfig.title} at (${posterConfig.position.x.toFixed(
-              2
-            )}, ${posterConfig.position.y.toFixed(2)}, ${posterConfig.position.z.toFixed(2)})`
-          );
         });
 
         // 모든 마네킹을 포함하는 전체 크기 계산
@@ -759,41 +753,30 @@ export default function ShowroomScene({
         });
         console.log("=== Manikins setup complete ===");
 
-        // 두 번째 테이블 위에 AED-T 모델 로드
-        const table2PositionX = secondaryTableConfig.position.x;
-        const table2PositionZ = secondaryTableConfig.position.z;
-        const table2TopY =
-          secondaryTableConfig.position.y +
-          secondaryTableConfig.dimensions.height / 2;
-
         // 마네킹 로드 완료
         loadingStateRef.current.manikins = true;
         checkAllLoaded();
 
-        // AED-T 모델 로드 및 포스터 생성
-        const table2RotationY = Math.PI / 2; // 두 번째 테이블의 회전 각도
+        // AED-T 모델 로드 및 포스터 생성 (절대 좌표 기반)
+        const aedLayout = CONSTANTS.BACKGROUND_EQUIPMENT.AED_T;
         loadAEDModelOnTable(
           scene,
-          table2PositionX,
-          table2PositionZ + 1,
-          table2TopY,
-          (Math.PI / 2) * 3,
-          (modelPositionX) => {
-            // AED-T 앞에 포스터 생성 (두 번째 테이블의 회전 각도 고려)
-            const aedPoster = createPoster(
-              "AED-T",
-              "Automatic External Defibrillator\nTraining Device\nProfessional Grade",
-              modelPositionX,
-              table2RotationY, // 테이블 회전 각도 전달
-              table2PositionZ + 1 // 테이블 Z 위치 전달
+          aedLayout.model.tablePosition.x,
+          aedLayout.model.tablePosition.z,
+          aedLayout.model.tableTopY,
+          aedLayout.model.rotationY,
+          () => {
+            const aedPoster = createPosterAtPosition(
+              aedLayout.poster.title,
+              aedLayout.poster.description,
+              aedLayout.poster.position,
+              aedLayout.poster.rotationY
             );
             scene.add(aedPoster);
             console.log(
-              `Created poster for AED-T at X: ${modelPositionX.toFixed(
+              `Created poster for ${aedLayout.poster.title} at (${aedLayout.poster.position.x.toFixed(
                 2
-              )}, Z: ${(table2PositionZ + 1).toFixed(
-                2
-              )}, rotation: ${table2RotationY.toFixed(2)}`
+              )}, ${aedLayout.poster.position.y.toFixed(2)}, ${aedLayout.poster.position.z.toFixed(2)})`
             );
 
             // AED-T 모델 로드 완료
@@ -806,13 +789,14 @@ export default function ShowroomScene({
         // AED-T 위치에서 Z축으로 -3 떨어진 곳에 배치
         loadIPadModelOnTable(
           scene,
-          table2PositionX,
-          table2PositionZ + 3, // AED-T 옆 (Z축 음수 방향)
-          table2TopY,
+          secondaryTableConfig.position.x,
+          secondaryTableConfig.position.z + 3, // AED-T 옆 (Z축 음수 방향)
+          secondaryTableConfig.position.y +
+            secondaryTableConfig.dimensions.height / 2,
           (Math.PI / 2) * 3, // AED-T와 같은 회전 각도
           (ipadPositionX) => {
             console.log(
-              `iPad model loaded at X: ${ipadPositionX.toFixed(2)}, Z: ${(table2PositionZ - 2).toFixed(2)}`
+              `iPad model loaded at X: ${ipadPositionX.toFixed(2)}, Z: ${(secondaryTableConfig.position.z - 2).toFixed(2)}`
             );
 
             // 아이패드 모델 참조 저장 (클릭 이벤트를 위해)

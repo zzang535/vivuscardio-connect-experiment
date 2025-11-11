@@ -116,3 +116,20 @@ export const BACKGROUND_POSTERS: readonly BackgroundPosterConfig[] = [
     rotationY: 0,
   },
 ] as const;
+
+export const BACKGROUND_EQUIPMENT = {
+  AED_T: {
+    model: {
+      tablePosition: { x: 7, z: 6 },
+      tableTopY: 1,
+      rotationY: (Math.PI / 2) * 3,
+    },
+    poster: {
+      title: "AED-T",
+      description:
+        "Automatic External Defibrillator\nTraining Device\nProfessional Grade",
+      position: { x: 5.9, y: POSTER_DEFAULT_Y, z: 6 },
+      rotationY: Math.PI / 2,
+    },
+  },
+} as const;
