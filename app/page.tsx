@@ -9,6 +9,7 @@ export default function Home() {
     { id: "section1", name: "AED Map" },
     { id: "section2", name: "Training Simulator" },
     { id: "section3", name: "Manikin Showroom" },
+    { id: "section4", name: "Manikin Showroom Virtual" },
   ];
 
   const handleSectionClick = (sectionId: string) => {
@@ -25,6 +26,10 @@ export default function Home() {
 
   const handleOpenManikinShowroom = () => {
     window.open("/manikin-showroom", "_blank");
+  };
+
+  const handleOpenManikinShowroomVirtual = () => {
+    window.open("/manikin-showroom-virtual", "_blank");
   };
 
   const renderActiveContent = () => {
@@ -116,6 +121,37 @@ export default function Home() {
             "
           >
             Manikin Showroom 열기
+          </button>
+        </div>
+      );
+    }
+
+    if (activeSection === "section4") {
+      return (
+        <div className="p-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            Manikin Showroom Virtual
+          </h2>
+          <p className="text-gray-600 mb-8">
+            R3F 기반 가상 마네킹 쇼룸을 경험하세요.
+          </p>
+          <button
+            onClick={handleOpenManikinShowroomVirtual}
+            className="
+              px-6 py-3
+              bg-[#FF5252]
+              text-white
+              font-semibold
+              rounded-lg
+              shadow-lg
+              hover:bg-[#FF3838]
+              transition-all
+              duration-300
+              hover:shadow-xl
+              hover:scale-105
+            "
+          >
+            Manikin Showroom Virtual 열기
           </button>
         </div>
       );
