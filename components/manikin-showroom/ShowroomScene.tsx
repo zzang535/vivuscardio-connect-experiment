@@ -709,8 +709,10 @@ export default function ShowroomScene({
         const { centerY, positions } =
           getBackgroundManikinLayoutInfo(manikins);
 
-        // 포스터를 사전 정의된 절대 좌표에 배치
-        CONSTANTS.BACKGROUND_POSTERS.forEach((posterConfig) => {
+        // 포스터를 사전 정의된 절대 좌표에 배치 (장비 연동 포스터 제외)
+        CONSTANTS.BACKGROUND_POSTERS.filter(
+          (posterConfig) => !posterConfig.equipmentId
+        ).forEach((posterConfig) => {
           const poster = createPosterAtPosition(
             posterConfig.title,
             posterConfig.description,
@@ -759,6 +761,10 @@ export default function ShowroomScene({
 
         // AED-T 모델 로드 및 포스터 생성 (절대 좌표 기반)
         const aedLayout = CONSTANTS.BACKGROUND_EQUIPMENT.AED_T;
+        const aedPosterConfig = CONSTANTS.BACKGROUND_POSTERS.find(
+          (poster) => poster.equipmentId === "AED_T"
+        );
+
         loadAEDModelOnTable(
           scene,
           aedLayout.model.tablePosition.x,
@@ -766,18 +772,24 @@ export default function ShowroomScene({
           aedLayout.model.tableTopY,
           aedLayout.model.rotationY,
           () => {
-            const aedPoster = createPosterAtPosition(
-              aedLayout.poster.title,
-              aedLayout.poster.description,
-              aedLayout.poster.position,
-              aedLayout.poster.rotationY
-            );
-            scene.add(aedPoster);
-            console.log(
-              `Created poster for ${aedLayout.poster.title} at (${aedLayout.poster.position.x.toFixed(
-                2
-              )}, ${aedLayout.poster.position.y.toFixed(2)}, ${aedLayout.poster.position.z.toFixed(2)})`
-            );
+            if (aedPosterConfig) {
+              const aedPoster = createPosterAtPosition(
+                aedPosterConfig.title,
+                aedPosterConfig.description,
+                aedPosterConfig.position,
+                aedPosterConfig.rotationY
+              );
+              scene.add(aedPoster);
+              console.log(
+                `Created poster for ${aedPosterConfig.title} at (${aedPosterConfig.position.x.toFixed(
+                  2
+                )}, ${aedPosterConfig.position.y.toFixed(2)}, ${aedPosterConfig.position.z.toFixed(
+                  2
+                )})`
+              );
+            } else {
+              console.warn("AED poster config not found. Skipping poster placement.");
+            }
 
             // AED-T 모델 로드 완료
             loadingStateRef.current.aedModel = true;
