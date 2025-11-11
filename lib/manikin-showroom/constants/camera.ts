@@ -22,23 +22,18 @@ export const CAMERA_CLIPPING = {
 // 카메라 초기 위치 설정
 // ============================================
 
-/**
- * ⚠️ 중요: 이 값은 마네킹이 로드되기 전의 임시 위치입니다.
- * 마네킹이 로드되면 autoAdjustCamera 함수가 호출되어 카메라 위치가 재설정됩니다.
- * 실제 카메라 높이를 조정하려면 아래의 AUTO_CAMERA.HEIGHT_OFFSET 값을 변경하세요!
- */
 export const INITIAL_CAMERA_POSITION = {
-  X: 0, // 좌우 중앙
-  Y: 10, // 높이 (마네킹 로드 전 임시 값)
-  Z: 300, // 전후 거리
+  X: -4.8,
+  Y: 4.915,
+  Z: 22.84,
 } as const;
 
 /**
  * 카메라가 바라보는 목표 지점 (x, y, z)
  */
 export const INITIAL_CAMERA_TARGET = {
-  X: 0,
-  Y: 50,
+  X: 2.4,
+  Y: 1.915,
   Z: 0,
 } as const;
 

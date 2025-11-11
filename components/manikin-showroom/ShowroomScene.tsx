@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import * as CONSTANTS from "@/lib/manikin-showroom/constants";
 import * as ASSETS from "@/lib/manikin-showroom/assets";
 import { CAMERA_TOUR_MUSIC_PATH } from "@/lib/manikin-showroom/assets";
@@ -12,9 +11,7 @@ import {
   createBoxGeometry,
   setupLights,
   createManikin,
-  positionMultipleManikinsOnTable,
-  getBackgroundManikinLayoutInfo,
-  autoAdjustCamera,
+  loadBackgroundManikins,
   loadAEDModelOnTable,
   loadIPadModelOnTable,
   createLogoBanner,
@@ -47,7 +44,6 @@ import ModelSelector from "./editor/ModelSelector";
 import MouseControlGuide from "./camera/MouseControlGuide";
 import Camera360Button from "./action/Camera360Button";
 import IPadModal from "./modal/IPadModal";
-import LoadingOverlay from "./LoadingOverlay";
 
 interface ShowroomSceneProps {
   visitorName?: string;
@@ -683,33 +679,13 @@ export default function ShowroomScene({
     secondaryTable.rotation.y = secondaryTableConfig.rotationY;
     scene.add(secondaryTable);
 
-    // OBJ 모델 로드 (마네킹 5개)
-    const loader = new OBJLoader();
+    loadBackgroundManikins({
+      scene,
+      templatePath: ASSETS.MANIKIN_MODEL_PATH,
+      count: CONSTANTS.BACKGROUND_MANIKINS.length,
+      onComplete: ({ template, manikins }) => {
+        manikinTemplateRef.current = template;
 
-    loader.load(
-      ASSETS.MANIKIN_MODEL_PATH,
-      (object) => {
-        console.log("=== OBJ file loaded successfully ===");
-        manikinTemplateRef.current = object; // 마네킹 템플릿 저장
-
-        // 마네킹을 5개 복제
-        const manikins: THREE.Object3D[] = [];
-        const MANIKIN_COUNT = 5;
-
-        for (let i = 0; i < MANIKIN_COUNT; i++) {
-          const manikin = createManikin(object);
-          manikins.push(manikin);
-          scene.add(manikin);
-        }
-
-        console.log(`Created ${MANIKIN_COUNT} manikins`);
-
-        // 마네킹들을 테이블 위에 절대 좌표로 배치
-        positionMultipleManikinsOnTable(manikins);
-        const { centerY, positions } =
-          getBackgroundManikinLayoutInfo(manikins);
-
-        // 포스터를 사전 정의된 절대 좌표에 배치 (장비 연동 포스터 제외)
         CONSTANTS.BACKGROUND_POSTERS.filter(
           (posterConfig) => !posterConfig.equipmentId
         ).forEach((posterConfig) => {
@@ -723,120 +699,60 @@ export default function ShowroomScene({
           scene.add(poster);
         });
 
-        // 모든 마네킹을 포함하는 전체 크기 계산
-        const boxes = manikins.map((manikin) =>
-          new THREE.Box3().setFromObject(manikin)
-        );
-        const overallBox = boxes.reduce((acc, box) => acc.union(box), boxes[0]);
-        const overallSize = overallBox.getSize(new THREE.Vector3());
-
-        console.log(
-          "Overall scene size:",
-          overallSize.x.toFixed(2),
-          overallSize.y.toFixed(2),
-          overallSize.z.toFixed(2)
-        );
-
-        // 카메라 자동 조정 (전체 씬을 고려)
-        // IM17-P 마네킹(인덱스 3)의 위치를 카메라 타겟으로 설정
-        const IM17_P_INDEX = 3; // IM17-P는 MANIKIN_INFO 배열의 인덱스 3
-        const im17pX =
-          positions.length > IM17_P_INDEX ? positions[IM17_P_INDEX] : 0;
-        const im17pZ = 0; // 마네킹은 테이블 중앙(Z=0)에 배치됨
-
-        autoAdjustCamera({
-          camera,
-          controls,
-          manikinSize: overallSize,
-          centerY,
-          targetX: im17pX, // IM17-P의 X 좌표
-          targetZ: im17pZ, // IM17-P의 Z 좌표 (테이블 중앙)
-          manikinPositions: positions,
-        });
-        console.log("=== Manikins setup complete ===");
-
-        // 마네킹 로드 완료
         loadingStateRef.current.manikins = true;
         checkAllLoaded();
-
-        // AED-T 모델 로드 및 포스터 생성 (절대 좌표 기반)
-        const aedLayout = CONSTANTS.BACKGROUND_EQUIPMENT.AED_T;
-        const aedPosterConfig = CONSTANTS.BACKGROUND_POSTERS.find(
-          (poster) => poster.equipmentId === "AED_T"
-        );
-
-        loadAEDModelOnTable(
-          scene,
-          aedLayout.model.tablePosition.x,
-          aedLayout.model.tablePosition.z,
-          aedLayout.model.tableTopY,
-          aedLayout.model.rotationY,
-          () => {
-            if (aedPosterConfig) {
-              const aedPoster = createPosterAtPosition(
-                aedPosterConfig.title,
-                aedPosterConfig.description,
-                aedPosterConfig.position,
-                aedPosterConfig.rotationY
-              );
-              scene.add(aedPoster);
-              console.log(
-                `Created poster for ${aedPosterConfig.title} at (${aedPosterConfig.position.x.toFixed(
-                  2
-                )}, ${aedPosterConfig.position.y.toFixed(2)}, ${aedPosterConfig.position.z.toFixed(
-                  2
-                )})`
-              );
-            } else {
-              console.warn("AED poster config not found. Skipping poster placement.");
-            }
-
-            // AED-T 모델 로드 완료
-            loadingStateRef.current.aedModel = true;
-            checkAllLoaded();
-          }
-        );
-
-        // 아이패드 모델 로드 (AED-T 옆에 배치)
-        // AED-T 위치에서 Z축으로 -3 떨어진 곳에 배치
-        loadIPadModelOnTable(
-          scene,
-          secondaryTableConfig.position.x,
-          secondaryTableConfig.position.z + 3, // AED-T 옆 (Z축 음수 방향)
-          secondaryTableConfig.position.y +
-            secondaryTableConfig.dimensions.height / 2,
-          (Math.PI / 2) * 3, // AED-T와 같은 회전 각도
-          (ipadPositionX) => {
-            console.log(
-              `iPad model loaded at X: ${ipadPositionX.toFixed(2)}, Z: ${(secondaryTableConfig.position.z - 2).toFixed(2)}`
-            );
-
-            // 아이패드 모델 참조 저장 (클릭 이벤트를 위해)
-            const ipadModel = scene.children.find(
-              child => child.userData.type === 'ipad'
-            );
-            if (ipadModel) {
-              ipadModelRef.current = ipadModel;
-            }
-
-            // 아이패드 모델 로드 완료
-            loadingStateRef.current.ipadModel = true;
-            checkAllLoaded();
-          }
-        );
       },
-      (progress) => {
+      onProgress: (progress) => {
         if (progress.total > 0) {
           const percent = ((progress.loaded / progress.total) * 100).toFixed(0);
-          console.log(
-            `Loading progress: ${percent}% (${progress.loaded}/${progress.total} bytes)`
-          );
         }
       },
-      (error) => {
-        console.error("=== Error loading manikin ===", error);
-        // 에러 발생 시에도 로딩 상태 업데이트 (로딩 화면이 계속 표시되지 않도록)
+      onError: (_error) => {
         loadingStateRef.current.manikins = true;
+        checkAllLoaded();
+      },
+    });
+
+    const aedConfig = CONSTANTS.BACKGROUND_AEDS[0];
+
+    loadAEDModelOnTable(
+      scene,
+      aedConfig.position.x,
+      aedConfig.position.z,
+      aedConfig.position.y,
+      aedConfig.rotationY,
+      () => {
+        loadingStateRef.current.aedModel = true;
+        checkAllLoaded();
+      }
+    );
+
+    const aedPosterConfig = CONSTANTS.BACKGROUND_POSTERS[5];
+
+    const aedPoster = createPosterAtPosition(
+      aedPosterConfig.title,
+      aedPosterConfig.description,
+      aedPosterConfig.position,
+      aedPosterConfig.rotationY
+    );
+    scene.add(aedPoster);
+
+
+    loadIPadModelOnTable(
+      scene,
+      secondaryTableConfig.position.x,
+      secondaryTableConfig.position.z + 3,
+      secondaryTableConfig.position.y +
+        secondaryTableConfig.dimensions.height / 2,
+      (Math.PI / 2) * 3,
+      (ipadPositionX) => {
+        const ipadModel = scene.children.find(
+          child => child.userData.type === 'ipad'
+        );
+        if (ipadModel) {
+          ipadModelRef.current = ipadModel;
+        }
+        loadingStateRef.current.ipadModel = true;
         checkAllLoaded();
       }
     );
@@ -879,13 +795,10 @@ export default function ShowroomScene({
 
       interactionManager.setup();
       interactionManagerRef.current = interactionManager;
-
-      console.log("UserInteractionManager initialized and setup complete");
     }
 
-    // 아이패드 클릭 이벤트 핸들러
-    const handleIPadClick = (event: MouseEvent) => {
-      // 배치 모드일 때는 무시
+    // 클릭 가능한 오브젝트 처리
+    const handleClickObjects = (event: MouseEvent) => {
       if (isPlacementModeRef.current) return;
 
       const rect = renderer.domElement.getBoundingClientRect();
@@ -897,20 +810,30 @@ export default function ShowroomScene({
       const raycaster = new THREE.Raycaster();
       raycaster.setFromCamera(mouse, camera);
 
-      // 아이패드 모델만 체크
-      if (ipadModelRef.current) {
-        const intersects = raycaster.intersectObject(ipadModelRef.current, true);
+      const clickTargets: Array<{
+        object: THREE.Object3D | null;
+        onClick: () => void;
+      }> = [
+        {
+          object: ipadModelRef.current,
+          onClick: () => {
+            setShowIPadModal(true);
+          },
+        },
+      ];
+
+      for (const target of clickTargets) {
+        if (!target.object) continue;
+        const intersects = raycaster.intersectObject(target.object, true);
         if (intersects.length > 0) {
-          console.log("iPad clicked!");
-          setShowIPadModal(true);
+          target.onClick();
+          return;
         }
       }
     };
 
     // 클릭 이벤트 리스너 등록
-    renderer.domElement.addEventListener('click', handleIPadClick);
-
-    console.log("iPad click event listener registered");
+    renderer.domElement.addEventListener('click', handleClickObjects);
 
     const highlightColorHex = 0x4a9eff;
     const updateGhostPreviewColor = (ghostObject: THREE.Object3D, color: number) => {
@@ -1097,11 +1020,10 @@ export default function ShowroomScene({
 
     // 클린업
     return () => {
-      console.log("=== Cleaning up Three.js scene ===");
       window.removeEventListener("resize", handleResize);
 
-      // 아이패드 클릭 이벤트 리스너 제거
-      renderer.domElement.removeEventListener('click', handleIPadClick);
+      // 클릭 이벤트 리스너 제거
+      renderer.domElement.removeEventListener('click', handleClickObjects);
 
       // UserInteractionManager cleanup
       if (interactionManagerRef.current) {
@@ -1116,7 +1038,6 @@ export default function ShowroomScene({
       ) {
         renderer.domElement.style.cursor = 'auto'; // 커서 스타일 초기화
         container.removeChild(renderer.domElement);
-        console.log("Canvas removed from container");
       }
 
       controls.dispose();
@@ -1130,8 +1051,6 @@ export default function ShowroomScene({
           }
         }
       });
-
-      console.log("Cleanup complete");
     };
   }, []);
 

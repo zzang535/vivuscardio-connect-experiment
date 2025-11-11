@@ -71,15 +71,19 @@ export const BACKGROUND_MANIKINS: readonly BackgroundManikinConfig[] = [
 const POSTER_DEFAULT_Y = 0.3;
 const POSTER_MAIN_Z = 1.1;
 
-export const BACKGROUND_EQUIPMENT = {
-  AED_T: {
-    model: {
-      tablePosition: { x: 7, z: 6 },
-      tableTopY: 1,
-      rotationY: (Math.PI / 2) * 3,
-    },
+export type BackgroundAEDConfig = {
+  id: string;
+  position: { x: number; y: number; z: number };
+  rotationY: number;
+};
+
+export const BACKGROUND_AEDS: readonly BackgroundAEDConfig[] = [
+  {
+    id: "aed-main",
+    position: { x: 7, y: 1, z: 6 },
+    rotationY: (Math.PI / 2) * 3,
   },
-} as const;
+] as const;
 
 export type BackgroundPosterConfig = {
   id: string;
@@ -88,7 +92,7 @@ export type BackgroundPosterConfig = {
   position: { x: number; y: number; z: number };
   rotationY: number;
   /** 특정 장비가 로드된 후 배치해야 할 경우 장비 ID 지정 */
-  equipmentId?: keyof typeof BACKGROUND_EQUIPMENT;
+  equipmentId?: (typeof BACKGROUND_AEDS)[number]["id"];
 };
 
 export const BACKGROUND_POSTERS: readonly BackgroundPosterConfig[] = [
@@ -133,7 +137,7 @@ export const BACKGROUND_POSTERS: readonly BackgroundPosterConfig[] = [
     description:
       "Automatic External Defibrillator\nTraining Device\nProfessional Grade",
     position: { x: 5.9, y: POSTER_DEFAULT_Y, z: 6 },
-    rotationY: Math.PI / 2,
-    equipmentId: "AED_T",
+    rotationY: Math.PI / 2 * 3,
+    equipmentId: "aed-main",
   },
 ] as const;

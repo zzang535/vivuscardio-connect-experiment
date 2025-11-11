@@ -5,9 +5,12 @@
 
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import * as CONSTANTS from "../constants";
 export * from "./logoBanner";
 export * from "./boxGeometry";
+export * from "./iPad";
+export * from "./poster";
 
 const BOX_HEIGHT = 2;
 const BOX_DEPTH = 2;
@@ -19,152 +22,6 @@ const BOX_POSITION_Y = 0;
  * @param description 하단에 표시할 설명 (작은 폰트, 여러 줄 가능)
  * @returns Three.js Texture 객체
  */
-function createTextTexture(title: string, description: string): THREE.CanvasTexture {
-  const canvas = document.createElement("canvas");
-  const context = canvas.getContext("2d");
-  if (!context) {
-    throw new Error("Failed to get canvas context");
-  }
-
-  // Canvas 크기 설정
-  canvas.width = 512;
-  canvas.height = 256;
-
-  // 배경 그리기
-  context.fillStyle = CONSTANTS.POSTER_STYLE.BACKGROUND_COLOR;
-  context.fillRect(0, 0, canvas.width, canvas.height);
-
-  // 테두리 그리기
-  context.strokeStyle = "#cccccc";
-  context.lineWidth = 4;
-  context.strokeRect(2, 2, canvas.width - 4, canvas.height - 4);
-
-  // 제목 텍스트 (상단, 큰 폰트)
-  context.fillStyle = CONSTANTS.POSTER_STYLE.TEXT_COLOR;
-  context.font = `bold ${CONSTANTS.POSTER_STYLE.TITLE_TEXT_SIZE}px ${CONSTANTS.POSTER_STYLE.FONT_FAMILY}`;
-  context.textAlign = "center";
-  context.textBaseline = "top";
-  context.fillText(title, canvas.width / 2, 30);
-
-  // 설명 텍스트 (하단, 작은 폰트, 여러 줄 지원)
-  context.font = `${CONSTANTS.POSTER_STYLE.DESCRIPTION_TEXT_SIZE}px ${CONSTANTS.POSTER_STYLE.FONT_FAMILY}`;
-  context.textBaseline = "top";
-  
-  const descriptionLines = description.split('\n');
-  const lineHeight = CONSTANTS.POSTER_STYLE.DESCRIPTION_TEXT_SIZE + 8;
-  const startY = canvas.height - (descriptionLines.length * lineHeight) - 30;
-  
-  descriptionLines.forEach((line, index) => {
-    context.fillText(line, canvas.width / 2, startY + (index * lineHeight));
-  });
-
-  // 텍스처 생성
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.needsUpdate = true;
-
-  return texture;
-}
-
-function buildPosterMesh(title: string, description: string): THREE.Mesh {
-  const geometry = new THREE.PlaneGeometry(
-    CONSTANTS.POSTER_SIZE.WIDTH,
-    CONSTANTS.POSTER_SIZE.HEIGHT
-  );
-
-  const texture = createTextTexture(title, description);
-  const material = new THREE.MeshStandardMaterial({
-    map: texture,
-    transparent: false,
-  });
-
-  return new THREE.Mesh(geometry, material);
-}
-
-/**
- * 포스터 메쉬 생성 (테이블 기준 배치)
- * @param title 포스터 상단에 표시할 제목 (큰 폰트)
- * @param description 포스터 하단에 표시할 설명 (작은 폰트)
- * @param positionX X 위치 (마네킹 위치에 맞춤)
- * @param tableRotationY 테이블의 Y축 회전 각도 (라디안, 기본값: 0)
- * @param tablePositionZ 테이블의 Z 위치 (기본값: 0)
- * @returns Three.js Mesh 객체
- */
-export function createPoster(
-  title: string,
-  description: string,
-  positionX: number,
-  tableRotationY: number = 0,
-  tablePositionZ: number = 0
-): THREE.Mesh {
-  const poster = buildPosterMesh(title, description);
-
-  // 테이블 앞면에 배치 (테이블 면 안쪽으로 딱 붙임)
-  const tableTopY = BOX_POSITION_Y + BOX_HEIGHT / 2;
-  const posterY = tableTopY + CONSTANTS.POSTER_STYLE.HEIGHT_OFFSET;
-  
-  // 테이블 회전 각도를 고려하여 포스터 위치 계산
-  // 회전이 없으면: Z = DEPTH/2 위치 (앞면, 정면에서 보임)
-  // 90도 회전이면: X축 양의 방향으로 이동 (오른쪽 면, 정면에서 보임)
-  const tableDepthHalf = BOX_DEPTH / 2;
-  const offset = tableDepthHalf - CONSTANTS.POSTER_STYLE.FRONT_OFFSET;
-  
-  // 회전 각도를 0~2π 범위로 정규화
-  const normalizedRotation = ((tableRotationY % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
-  
-  if (Math.abs(normalizedRotation) < 0.01 || Math.abs(normalizedRotation - Math.PI * 2) < 0.01) {
-    // 첫 번째 테이블 (가로 방향, 회전 없음) - Z축 앞면에 포스터
-    const posterZ = tablePositionZ + offset;
-    poster.position.set(positionX, posterY, posterZ);
-    poster.rotation.y = 0; // 정면을 향하도록
-  } else if (Math.abs(normalizedRotation - Math.PI / 2) < 0.01) {
-    // 두 번째 테이블 (세로 방향, 90도 회전) - X축 왼쪽 면에 포스터
-    // 테이블이 90도 회전되면 원래 Z축 앞면이 X축 방향으로 바뀜
-    // 카메라 정면에서 보면 테이블의 왼쪽 면이 보이므로, 포스터를 X축 음의 방향에 배치
-    const posterX = positionX - offset;
-    const posterZ = tablePositionZ;
-    poster.position.set(posterX, posterY, posterZ);
-    // 포스터도 -90도 회전하여 테이블 면과 평행하게 배치 (카메라 정면을 바라보도록)
-    poster.rotation.y = -Math.PI / 2;
-  } else if (Math.abs(normalizedRotation - Math.PI) < 0.01 || Math.abs(normalizedRotation + Math.PI) < 0.01) {
-    // 180도 회전된 경우
-    const posterZ = tablePositionZ - offset;
-    poster.position.set(positionX, posterY, posterZ);
-    poster.rotation.y = Math.PI;
-  } else if (Math.abs(normalizedRotation - Math.PI * 3 / 2) < 0.01 || Math.abs(normalizedRotation + Math.PI / 2) < 0.01) {
-    // 270도 회전된 경우 (또는 -90도)
-    const posterX = positionX - offset;
-    const posterZ = tablePositionZ;
-    poster.position.set(posterX, posterY, posterZ);
-    poster.rotation.y = -Math.PI / 2;
-  } else {
-    // 기타 회전 각도는 기본값 사용
-    const posterZ = tablePositionZ + offset;
-    poster.position.set(positionX, posterY, posterZ);
-    poster.rotation.y = 0;
-  }
-
-  return poster;
-}
-
-/**
- * 포스터 메쉬 생성 (절대 좌표 배치)
- * @param title 포스터 상단에 표시할 제목
- * @param description 포스터 설명
- * @param position 월드 좌표
- * @param rotationY Y축 회전 값
- */
-export function createPosterAtPosition(
-  title: string,
-  description: string,
-  position: { x: number; y: number; z: number },
-  rotationY: number = 0
-): THREE.Mesh {
-  const poster = buildPosterMesh(title, description);
-  poster.position.set(position.x, position.y, position.z);
-  poster.rotation.y = rotationY;
-  return poster;
-}
-
 /**
  * 지면 메쉬 생성
  * @returns Three.js Mesh 객체
@@ -301,136 +158,85 @@ export function positionManikinOnTable(manikin: THREE.Object3D, xPosition: numbe
   return tableTopY + size.y / 2;
 }
 
-type BackgroundManikinLayout = ReadonlyArray<(typeof CONSTANTS.BACKGROUND_MANIKINS)[number]>;
+export interface LoadBackgroundManikinsOptions {
+  scene: THREE.Scene;
+  templatePath: string;
+  count?: number;
+  layout?: ReadonlyArray<(typeof CONSTANTS.BACKGROUND_MANIKINS)[number]>;
+  onComplete?: (result: {
+    template: THREE.Object3D;
+    manikins: THREE.Object3D[];
+    centerY: number;
+    positions: number[];
+  }) => void;
+  onProgress?: (event: ProgressEvent<EventTarget>) => void;
+  onError?: (error: unknown) => void;
+}
 
-/**
- * 여러 마네킹을 고정된 좌표에 배치
- * @param manikins 마네킹 Object3D 배열
- * @param layout 사전 정의된 마네킹 레이아웃
- * @returns 배치된 마네킹들의 중심 Y 좌표와 X 위치 배열
- */
-export function positionMultipleManikinsOnTable(
-  manikins: THREE.Object3D[],
-  layout: BackgroundManikinLayout = CONSTANTS.BACKGROUND_MANIKINS
-): { centerY: number; positions: number[] } {
-  if (manikins.length === 0) return { centerY: 0, positions: [] };
+export function loadBackgroundManikins({
+  scene,
+  templatePath,
+  count = CONSTANTS.BACKGROUND_MANIKINS.length,
+  layout = CONSTANTS.BACKGROUND_MANIKINS,
+  onComplete,
+  onProgress,
+  onError,
+}: LoadBackgroundManikinsOptions): void {
+  const loader = new OBJLoader();
 
-  const fallbackLayout =
-    layout[layout.length - 1] ?? {
-      id: "fallback-manikin",
-      position: { x: 0, y: 0, z: 0 },
-      rotationY: 0,
-      tableId: "MAIN",
-    };
+  loader.load(
+    templatePath,
+    (template) => {
+      console.log("=== OBJ file loaded successfully ===");
+      const manikins: THREE.Object3D[] = [];
 
-  const box = new THREE.Box3().setFromObject(manikins[0]);
-  const size = box.getSize(new THREE.Vector3());
-  const tableTopY = BOX_POSITION_Y + BOX_HEIGHT / 2;
+      for (let i = 0; i < count; i++) {
+        const manikin = createManikin(template);
+        manikins.push(manikin);
+        scene.add(manikin);
+      }
 
-  const positions: number[] = [];
+      console.log(`Created ${manikins.length} manikins`);
 
-  manikins.forEach((manikin, index) => {
-    const config = layout[index] ?? fallbackLayout;
-    const xPosition = config.position.x;
-    positionManikinOnTable(manikin, xPosition);
-    if (config.position.z !== undefined) {
-      manikin.position.z = config.position.z;
+      const fallbackLayout =
+        layout[layout.length - 1] ?? {
+          id: "fallback-manikin",
+          position: { x: 0, y: 0, z: 0 },
+          rotationY: 0,
+        };
+
+      const positions: number[] = [];
+      const tableTopY = BOX_POSITION_Y + BOX_HEIGHT / 2;
+      const sampleSize =
+        manikins.length > 0
+          ? new THREE.Box3()
+              .setFromObject(manikins[0])
+              .getSize(new THREE.Vector3())
+          : new THREE.Vector3(0, 0, 0);
+
+      manikins.forEach((manikin, index) => {
+        const config = layout[index] ?? fallbackLayout;
+        const xPosition = config.position.x;
+        positionManikinOnTable(manikin, xPosition);
+        if (config.position.z !== undefined) {
+          manikin.position.z = config.position.z;
+        }
+        if (config.rotationY !== undefined) {
+          manikin.rotation.y = config.rotationY;
+        }
+        positions.push(xPosition);
+      });
+
+      const centerY = tableTopY + sampleSize.y / 2;
+
+      onComplete?.({ template, manikins, centerY, positions });
+    },
+    onProgress,
+    (error) => {
+      console.error("=== Error loading manikin ===", error);
+      onError?.(error);
     }
-    if (config.rotationY !== undefined) {
-      manikin.rotation.y = config.rotationY;
-    }
-    positions.push(xPosition);
-  });
-
-  return { centerY: tableTopY + size.y / 2, positions };
-}
-
-/**
- * BACKGROUND_MANIKINS 기반 카메라 보조 정보 계산
- * @param manikins 배치된 마네킹 목록 (첫 번째 항목으로 높이 계산)
- * @param layout 사전 정의된 레이아웃
- */
-export function getBackgroundManikinLayoutInfo(
-  manikins: THREE.Object3D[],
-  layout: BackgroundManikinLayout = CONSTANTS.BACKGROUND_MANIKINS
-): { centerY: number; positions: number[] } {
-  const positions = layout.map((config) => config.position.x);
-  if (manikins.length === 0) {
-    return { centerY: 0, positions };
-  }
-
-  const box = new THREE.Box3().setFromObject(manikins[0]);
-  const size = box.getSize(new THREE.Vector3());
-  const tableTopY = BOX_POSITION_Y + BOX_HEIGHT / 2;
-
-  return { centerY: tableTopY + size.y / 2, positions };
-}
-
-/**
- * 카메라 자동 조정 옵션
- */
-export interface AutoAdjustCameraOptions {
-  /** Three.js Camera */
-  camera: THREE.PerspectiveCamera;
-  /** OrbitControls */
-  controls: any;
-  /** 마네킹 크기 */
-  manikinSize: THREE.Vector3;
-  /** 바라볼 중심 Y 좌표 */
-  centerY: number;
-  /** 타겟 X 위치 (기본값: 0) */
-  targetX?: number;
-  /** 타겟 Z 위치 (기본값: 0) */
-  targetZ?: number;
-  /** 마네킹 X 위치 배열 (다섯번째 마네킹 위치를 카메라 X 좌표로 사용) */
-  manikinPositions?: number[];
-}
-
-/**
- * 카메라를 씬에 맞게 자동 조정
- */
-export function autoAdjustCamera({
-  camera,
-  controls,
-  manikinSize,
-  centerY,
-  targetX = 0,
-  targetZ = 0,
-  manikinPositions,
-}: AutoAdjustCameraOptions): void {
-  // 전체 씬의 높이 고려 (테이블 + 마네킹)
-  const totalHeight = manikinSize.y + BOX_HEIGHT + CONSTANTS.MANIKIN_BOX_OFFSET;
-  const maxDim = Math.max(manikinSize.x, totalHeight, manikinSize.z);
-  console.log("Max dimension:", maxDim.toFixed(2));
-
-  const fov = camera.fov * (Math.PI / 180);
-  const cameraDistance = Math.abs(maxDim / Math.sin(fov / 2)) * CONSTANTS.AUTO_CAMERA.DISTANCE_MULTIPLIER;
-
-  console.log("Camera distance:", cameraDistance.toFixed(2));
-
-  // 카메라 위치 X 좌표: 다섯번째 마네킹의 X 좌표 사용 (인덱스 4)
-  // 마네킹 위치가 제공되지 않으면 타겟 X 사용
-  const cameraX = manikinPositions && manikinPositions.length > 4 
-    ? manikinPositions[0] // 다섯번째 마네킹 (인덱스 4)
-    : targetX;
-
-  // 카메라 위치 설정 - 정면 뷰 (Z축 양수 방향, 마네킹 중앙 높이 + 오프셋)
-  const cameraY = centerY + CONSTANTS.AUTO_CAMERA.HEIGHT_OFFSET;
-  camera.position.set(
-    cameraX, // X: 다섯번째 마네킹의 X 좌표
-    cameraY, // Y: 마네킹 중앙 높이 + 오프셋 (오프셋을 높이면 카메라가 위로 올라감)
-    targetZ + cameraDistance // Z: 타겟 앞에서 충분한 거리
   );
-  camera.lookAt(targetX, centerY, targetZ); // 타겟 위치는 그대로 유지
-
-  // OrbitControls 타겟 설정
-  controls.target.set(targetX, centerY, targetZ);
-  controls.update();
-
-  console.log("Camera position (front view):", camera.position.x.toFixed(2), camera.position.y.toFixed(2), camera.position.z.toFixed(2));
-  console.log("Camera target:", targetX.toFixed(2), centerY.toFixed(2), targetZ.toFixed(2));
-  console.log("Fifth manikin X position:", cameraX.toFixed(2));
-  console.log("Camera height offset:", CONSTANTS.AUTO_CAMERA.HEIGHT_OFFSET);
 }
 
 /**
@@ -517,134 +323,6 @@ export function loadAEDModelOnTable(
  * @param color 화살표 색상 (기본값: 0x4a9eff)
  * @returns Three.js Group 객체
  */
-export function createClickIndicatorArrow(
-  position: THREE.Vector3,
-  color: number = 0x4a9eff
-): THREE.Group {
-  const arrowGroup = new THREE.Group();
-
-  // 화살표 원뿔 (아래를 가리킴)
-  const coneGeometry = new THREE.ConeGeometry(0.3, 0.6, 8);
-  const coneMaterial = new THREE.MeshStandardMaterial({
-    color,
-    emissive: color,
-    emissiveIntensity: 0.5,
-  });
-  const cone = new THREE.Mesh(coneGeometry, coneMaterial);
-  cone.rotation.x = Math.PI; // 아래를 가리키도록 회전
-
-  // 화살표 막대
-  const cylinderGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.8, 8);
-  const cylinderMaterial = new THREE.MeshStandardMaterial({
-    color,
-    emissive: color,
-    emissiveIntensity: 0.5,
-  });
-  const cylinder = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
-  cylinder.position.y = 0.7;
-
-  arrowGroup.add(cone);
-  arrowGroup.add(cylinder);
-  arrowGroup.position.copy(position);
-
-  // 애니메이션을 위한 userData 설정
-  arrowGroup.userData.animationOffset = Math.random() * Math.PI * 2;
-  arrowGroup.userData.type = 'clickIndicator';
-
-  return arrowGroup;
-}
-
-/**
- * 아이패드 모델을 테이블 위에 로드 및 배치
- * @param scene Three.js Scene 객체
- * @param tablePositionX 테이블의 X 위치
- * @param tablePositionZ 테이블의 Z 위치
- * @param tableTopY 테이블 상단의 Y 위치
- * @param rotationY Y축 회전 각도 (라디안, 기본값: 0)
- * @param onLoadComplete 모델 로드 완료 후 호출되는 콜백 함수
- */
-export function loadIPadModelOnTable(
-  scene: THREE.Scene,
-  tablePositionX: number,
-  tablePositionZ: number,
-  tableTopY: number,
-  rotationY: number = 0,
-  onLoadComplete?: (modelPositionX: number) => void
-): void {
-  const gltfLoader = new GLTFLoader();
-
-  gltfLoader.load(
-    "/manikin-showroom/ipad_base_basic_pbr.glb",
-    (gltf) => {
-      console.log("=== iPad GLB file loaded successfully ===");
-      const ipadModel = gltf.scene;
-
-      // 스케일 조정 (0.3으로 축소)
-      ipadModel.scale.set(0.3, 0.3, 0.3);
-
-      // 재질 및 그림자 설정
-      ipadModel.traverse((node) => {
-        if (node instanceof THREE.Mesh) {
-          node.castShadow = true;
-          node.receiveShadow = true;
-        }
-      });
-
-      // 클릭 가능한 객체로 표시
-      ipadModel.userData.isClickable = true;
-      ipadModel.userData.type = 'ipad';
-
-      // Bounding box 계산 (스케일 적용 후)
-      const box = new THREE.Box3().setFromObject(ipadModel);
-      const center = box.getCenter(new THREE.Vector3());
-      const size = box.getSize(new THREE.Vector3());
-
-      // 테이블 위에 배치 (테이블에 딱 붙도록)
-      ipadModel.position.x = tablePositionX - center.x;
-      ipadModel.position.y = tableTopY - center.y + size.y / 2;
-      ipadModel.position.z = tablePositionZ - center.z;
-
-      // X축 회전 (90도 눕히기)
-      ipadModel.rotation.x = -Math.PI / 2;
-
-      // Y축 회전 적용
-      // if (rotationY !== 0) {
-      //   ipadModel.rotation.y = rotationY;
-      // }
-
-      scene.add(ipadModel);
-      console.log("iPad model positioned on table at Y:", ipadModel.position.y.toFixed(2), "rotation X:", ipadModel.rotation.x.toFixed(2), "rotation Y:", rotationY.toFixed(2), "scale: 0.3");
-
-      // 클릭 가능 표시 화살표 추가 (아이패드 위쪽)
-      const arrowPosition = new THREE.Vector3(
-        ipadModel.position.x,
-        ipadModel.position.y + 1.5, // 아이패드 위 1.5 유닛
-        ipadModel.position.z
-      );
-      const clickIndicator = createClickIndicatorArrow(arrowPosition);
-      scene.add(clickIndicator);
-
-      // 아이패드 모델에 화살표 참조 저장
-      ipadModel.userData.clickIndicator = clickIndicator;
-
-      console.log("Click indicator arrow added above iPad");
-
-      // 로드 완료 콜백 호출
-      if (onLoadComplete) {
-        onLoadComplete(ipadModel.position.x);
-      }
-    },
-    (progress) => {
-      if (progress.total > 0) {
-        const percent = ((progress.loaded / progress.total) * 100).toFixed(0);
-        console.log(`iPad Loading progress: ${percent}%`);
-      }
-    },
-    (error) => {
-      console.error("=== Error loading iPad ===", error);
-    }
-  );
-}
 
 /**
  * 바닥 그리드 생성
