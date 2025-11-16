@@ -27,10 +27,10 @@ const ManikinModel = forwardRef<ManikinModelRef, ManikinModelProps>(
     // 애니메이션 설정
     const { actions, names } = useAnimations(animations, group);
 
-    // 재질 적용
+    // 재질 적용 - group의 자식들에 직접 적용
     useEffect(() => {
-      if (scene) {
-        scene.traverse((node) => {
+      if (group.current) {
+        group.current.traverse((node) => {
           if (node instanceof THREE.Mesh) {
             node.material = new THREE.MeshStandardMaterial({
               color,
@@ -42,7 +42,7 @@ const ManikinModel = forwardRef<ManikinModelRef, ManikinModelProps>(
           }
         });
       }
-    }, [scene, color]);
+    }, [color]);
 
     // 외부에서 애니메이션 제어할 수 있도록 ref 노출
     useImperativeHandle(ref, () => ({
@@ -66,7 +66,7 @@ const ManikinModel = forwardRef<ManikinModelRef, ManikinModelProps>(
 
     return (
       <group ref={group} position={position} rotation={rotation}>
-        <primitive object={scene.clone()} />
+        <primitive object={scene} />
       </group>
     );
   }
