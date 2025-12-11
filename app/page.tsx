@@ -10,6 +10,7 @@ export default function Home() {
     { id: "section2", name: "Training Simulator" },
     { id: "section3", name: "Manikin Showroom" },
     { id: "section4", name: "Manikin Showroom Virtual" },
+    { id: "section5", name: "CPR Feedback" },
   ];
 
   const handleSectionClick = (sectionId: string) => {
@@ -30,6 +31,10 @@ export default function Home() {
 
   const handleOpenManikinShowroomVirtual = () => {
     window.open("/manikin-showroom-virtual", "_blank");
+  };
+
+  const handleOpenCPRFeedback = () => {
+    window.open("/cpr-feedback", "_blank");
   };
 
   const renderActiveContent = () => {
@@ -152,6 +157,37 @@ export default function Home() {
             "
           >
             Manikin Showroom Virtual 열기
+          </button>
+        </div>
+      );
+    }
+
+    if (activeSection === "section5") {
+      return (
+        <div className="p-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            CPR Feedback
+          </h2>
+          <p className="text-gray-600 mb-8">
+            CPR 결과 데이터를 분석하고 AI 피드백을 받으세요.
+          </p>
+          <button
+            onClick={handleOpenCPRFeedback}
+            className="
+              px-6 py-3
+              bg-[#FF5252]
+              text-white
+              font-semibold
+              rounded-lg
+              shadow-lg
+              hover:bg-[#FF3838]
+              transition-all
+              duration-300
+              hover:shadow-xl
+              hover:scale-105
+            "
+          >
+            CPR Feedback 열기
           </button>
         </div>
       );
