@@ -19,6 +19,9 @@ export default function CPRFeedbackPage() {
   );
 
 
+
+
+
   const [detailData, setDetailData] = useState<TrainingDetailResponse | null>(
     null
   );
@@ -324,10 +327,10 @@ export default function CPRFeedbackPage() {
                                   <span className="text-gray-700">통과:</span>
                                   <span
                                     className={`font-semibold ${detailData.is_passed === true
-                                        ? "text-green-600"
-                                        : detailData.is_passed === false
-                                          ? "text-red-600"
-                                          : "text-gray-900"
+                                      ? "text-green-600"
+                                      : detailData.is_passed === false
+                                        ? "text-red-600"
+                                        : "text-gray-900"
                                       }`}
                                   >
                                     {detailData.is_passed === true
@@ -675,10 +678,10 @@ export default function CPRFeedbackPage() {
                       <td className="px-4 py-3 text-sm">
                         <span
                           className={`font-bold ${record.score >= 80
-                              ? "text-green-600"
-                              : record.score >= 60
-                                ? "text-yellow-600"
-                                : "text-red-600"
+                            ? "text-green-600"
+                            : record.score >= 60
+                              ? "text-yellow-600"
+                              : "text-red-600"
                             }`}
                         >
                           {record.score}점
