@@ -1,5 +1,31 @@
 // CPR 피드백 관련 API 함수
 
+import { loginMultiCourse } from "../auth/api";
+
+// 토큰 캐시 (메모리)
+let cachedToken: string | null = null;
+let tokenExpiry: number | null = null;
+const TOKEN_VALIDITY_DURATION = 60 * 60 * 1000; // 1시간
+
+// 간단한 토큰 관리
+async function getAuthToken(): Promise<string> {
+  // 캐시된 토큰이 유효한 경우
+  if (cachedToken && tokenExpiry && Date.now() < tokenExpiry) {
+    return cachedToken;
+  }
+
+  // 로그인하여 새 토큰 획득
+  const organization = process.env.NEXT_PUBLIC_AUTH_ORGANIZATION || "";
+  const email = process.env.NEXT_PUBLIC_AUTH_EMAIL || "";
+  const password = process.env.NEXT_PUBLIC_AUTH_PASSWORD || "";
+
+  const response = await loginMultiCourse({ organization, email, password });
+  cachedToken = response.data.token;
+  tokenExpiry = Date.now() + TOKEN_VALIDITY_DURATION;
+
+  return cachedToken;
+}
+
 interface RecordListPayload {
   userId?: string;
   searchKeyword?: string;
@@ -227,14 +253,16 @@ export const getRecordListV1 = async (
   params.append("page", payload.page.toString());
 
   const url = `${baseUrl}/v1/trainings?${params.toString()}`;
-  const token = process.env.NEXT_PUBLIC_API_TOKEN;
 
   try {
+    // 동적으로 토큰 가져오기
+    const token = await getAuthToken();
+
     const response = await fetch(url, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        ...(token && { Authorization: token }),
+        Authorization: token,
       },
     });
 
@@ -259,14 +287,16 @@ export const getRecordDetail = async (
   }
 
   const url = `${baseUrl}/trainings/${trainingId}`;
-  const token = process.env.NEXT_PUBLIC_API_TOKEN;
 
   try {
+    // 동적으로 토큰 가져오기
+    const token = await getAuthToken();
+
     const response = await fetch(url, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        ...(token && { Authorization: token }),
+        Authorization: token,
       },
     });
 

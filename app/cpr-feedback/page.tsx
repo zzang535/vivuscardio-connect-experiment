@@ -8,7 +8,7 @@ import {
   getChartDataset,
   type TrainingRecord,
   type TrainingDetailResponse,
-} from "@/lib/cpr-feedback/api";
+} from "@/app/api/cpr-feedback/api";
 
 type FilterType = "all" | "pass" | "fail";
 
@@ -287,29 +287,29 @@ export default function CPRFeedbackPage() {
 
                             {/* 기본 정보 */}
                             <div>
-                              <h3 className="font-semibold text-gray-700 border-b pb-2 mb-3">
+                              <h3 className="font-semibold text-gray-900 border-b pb-2 mb-3">
                                 기본 정보
                               </h3>
                               <div className="space-y-2 text-sm">
                                 <div className="flex justify-between">
-                                  <span className="text-gray-500">
+                                  <span className="text-gray-700">
                                     훈련 날짜:
                                   </span>
-                                  <span className="font-medium">
+                                  <span className="font-medium text-gray-900">
                                     {new Date(
                                       detailData.datetime
                                     ).toLocaleDateString("ko-KR")}
                                   </span>
                                 </div>
                                 <div className="flex justify-between">
-                                  <span className="text-gray-500">사용자:</span>
-                                  <span className="font-medium">
+                                  <span className="text-gray-700">사용자:</span>
+                                  <span className="font-medium text-gray-900">
                                     {detailData.user.name}
                                   </span>
                                 </div>
                                 <div className="flex justify-between">
-                                  <span className="text-gray-500">마네킹:</span>
-                                  <span className="font-medium">
+                                  <span className="text-gray-700">마네킹:</span>
+                                  <span className="font-medium text-gray-900">
                                     {detailData.training_program
                                       .manikin_type === "adult"
                                       ? "성인"
@@ -320,14 +320,14 @@ export default function CPRFeedbackPage() {
                                   </span>
                                 </div>
                                 <div className="flex justify-between">
-                                  <span className="text-gray-500">통과:</span>
+                                  <span className="text-gray-700">통과:</span>
                                   <span
                                     className={`font-semibold ${
                                       detailData.is_passed === true
                                         ? "text-green-600"
                                         : detailData.is_passed === false
                                         ? "text-red-600"
-                                        : "text-gray-600"
+                                        : "text-gray-900"
                                     }`}
                                   >
                                     {detailData.is_passed === true
@@ -343,52 +343,52 @@ export default function CPRFeedbackPage() {
                             {/* CPR 점수 */}
                             {detailData.cpr && (
                               <div>
-                                <h3 className="font-semibold text-gray-700 border-b pb-2 mb-3">
+                                <h3 className="font-semibold text-gray-900 border-b pb-2 mb-3">
                                   CPR 점수
                                 </h3>
                                 <div className="space-y-2 text-sm">
                                   <div className="flex justify-between">
-                                    <span className="text-gray-500">총점:</span>
+                                    <span className="text-gray-700">총점:</span>
                                     <span className="text-2xl font-bold text-blue-600">
                                       {detailData.cpr.score.total}점
                                     </span>
                                   </div>
                                   <div className="flex justify-between">
-                                    <span className="text-gray-500">
+                                    <span className="text-gray-700">
                                       압박 깊이:
                                     </span>
-                                    <span className="font-medium">
+                                    <span className="font-medium text-gray-900">
                                       {detailData.cpr.score.compression_depth}점
                                     </span>
                                   </div>
                                   <div className="flex justify-between">
-                                    <span className="text-gray-500">
+                                    <span className="text-gray-700">
                                       압박 속도:
                                     </span>
-                                    <span className="font-medium">
+                                    <span className="font-medium text-gray-900">
                                       {detailData.cpr.score.compression_rate}점
                                     </span>
                                   </div>
                                   <div className="flex justify-between">
-                                    <span className="text-gray-500">
+                                    <span className="text-gray-700">
                                       압박 이완:
                                     </span>
-                                    <span className="font-medium">
+                                    <span className="font-medium text-gray-900">
                                       {detailData.cpr.score.compression_recoil}
                                       점
                                     </span>
                                   </div>
                                   <div className="flex justify-between">
-                                    <span className="text-gray-500">
+                                    <span className="text-gray-700">
                                       손 위치:
                                     </span>
-                                    <span className="font-medium">
+                                    <span className="font-medium text-gray-900">
                                       {detailData.cpr.score.handposition}점
                                     </span>
                                   </div>
                                   <div className="flex justify-between">
-                                    <span className="text-gray-500">CCF:</span>
-                                    <span className="font-medium">
+                                    <span className="text-gray-700">CCF:</span>
+                                    <span className="font-medium text-gray-900">
                                       {detailData.cpr.score.ccf}점
                                     </span>
                                   </div>
@@ -399,40 +399,40 @@ export default function CPRFeedbackPage() {
                             {/* 인공호흡 점수 */}
                             {detailData.cpr && (
                               <div>
-                                <h3 className="font-semibold text-gray-700 border-b pb-2 mb-3">
+                                <h3 className="font-semibold text-gray-900 border-b pb-2 mb-3">
                                   인공호흡 점수
                                 </h3>
                                 <div className="space-y-2 text-sm">
                                   <div className="flex justify-between">
-                                    <span className="text-gray-500">
+                                    <span className="text-gray-700">
                                       환기량:
                                     </span>
-                                    <span className="font-medium">
+                                    <span className="font-medium text-gray-900">
                                       {detailData.cpr.score.ventilation_volume}
                                       점
                                     </span>
                                   </div>
                                   <div className="flex justify-between">
-                                    <span className="text-gray-500">
+                                    <span className="text-gray-700">
                                       환기 속도:
                                     </span>
-                                    <span className="font-medium">
+                                    <span className="font-medium text-gray-900">
                                       {detailData.cpr.score.ventilation_speed}점
                                     </span>
                                   </div>
                                   <div className="flex justify-between">
-                                    <span className="text-gray-500">
+                                    <span className="text-gray-700">
                                       환기 횟수:
                                     </span>
-                                    <span className="font-medium">
+                                    <span className="font-medium text-gray-900">
                                       {detailData.cpr.score.ventilation_count}점
                                     </span>
                                   </div>
                                   <div className="flex justify-between">
-                                    <span className="text-gray-500">
+                                    <span className="text-gray-700">
                                       구조 환기:
                                     </span>
-                                    <span className="font-medium">
+                                    <span className="font-medium text-gray-900">
                                       {detailData.cpr.score.rescue_vent}점
                                     </span>
                                   </div>
