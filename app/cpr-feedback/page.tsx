@@ -17,6 +17,8 @@ export default function CPRFeedbackPage() {
   const [selectedRecord, setSelectedRecord] = useState<TrainingRecord | null>(
     null
   );
+
+
   const [detailData, setDetailData] = useState<TrainingDetailResponse | null>(
     null
   );
@@ -249,10 +251,9 @@ export default function CPRFeedbackPage() {
                                   disabled={isLoadingChart}
                                   className={`
                                     px-4 py-2 rounded-lg font-medium text-sm
-                                    ${
-                                      isLoadingChart
-                                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                        : "bg-blue-500 text-white hover:bg-blue-600"
+                                    ${isLoadingChart
+                                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                      : "bg-blue-500 text-white hover:bg-blue-600"
                                     }
                                     transition-colors
                                   `}
@@ -314,27 +315,26 @@ export default function CPRFeedbackPage() {
                                       .manikin_type === "adult"
                                       ? "성인"
                                       : detailData.training_program
-                                          .manikin_type === "infant"
-                                      ? "유아"
-                                      : "소아"}
+                                        .manikin_type === "infant"
+                                        ? "유아"
+                                        : "소아"}
                                   </span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-gray-700">통과:</span>
                                   <span
-                                    className={`font-semibold ${
-                                      detailData.is_passed === true
+                                    className={`font-semibold ${detailData.is_passed === true
                                         ? "text-green-600"
                                         : detailData.is_passed === false
-                                        ? "text-red-600"
-                                        : "text-gray-900"
-                                    }`}
+                                          ? "text-red-600"
+                                          : "text-gray-900"
+                                      }`}
                                   >
                                     {detailData.is_passed === true
                                       ? "통과"
                                       : detailData.is_passed === false
-                                      ? "불합격"
-                                      : "N/A"}
+                                        ? "불합격"
+                                        : "N/A"}
                                   </span>
                                 </div>
                               </div>
@@ -454,10 +454,9 @@ export default function CPRFeedbackPage() {
                             disabled={isLoadingFeedback || !chartData}
                             className={`
                               px-6 py-2 rounded-lg font-semibold text-sm
-                              ${
-                                isLoadingFeedback || !chartData
-                                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                  : "bg-[#FF5252] text-white hover:bg-[#FF3838] shadow-lg hover:shadow-xl"
+                              ${isLoadingFeedback || !chartData
+                                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                : "bg-[#FF5252] text-white hover:bg-[#FF3838] shadow-lg hover:shadow-xl"
                               }
                               transition-all duration-300
                             `}
@@ -465,8 +464,8 @@ export default function CPRFeedbackPage() {
                             {isLoadingFeedback
                               ? "분석 중..."
                               : chartData
-                              ? "AI 피드백 받기"
-                              : "먼저 차트 데이터를 불러오세요"}
+                                ? "AI 피드백 받기"
+                                : "먼저 차트 데이터를 불러오세요"}
                           </button>
                         </div>
 
@@ -562,10 +561,9 @@ export default function CPRFeedbackPage() {
                 onClick={() => handleFilterChange("all")}
                 className={`
                   px-4 py-2 rounded-lg font-medium text-sm transition-all
-                  ${
-                    filter === "all"
-                      ? "bg-blue-500 text-white shadow-md"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  ${filter === "all"
+                    ? "bg-blue-500 text-white shadow-md"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }
                 `}
               >
@@ -575,10 +573,9 @@ export default function CPRFeedbackPage() {
                 onClick={() => handleFilterChange("pass")}
                 className={`
                   px-4 py-2 rounded-lg font-medium text-sm transition-all
-                  ${
-                    filter === "pass"
-                      ? "bg-green-500 text-white shadow-md"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  ${filter === "pass"
+                    ? "bg-green-500 text-white shadow-md"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }
                 `}
               >
@@ -588,10 +585,9 @@ export default function CPRFeedbackPage() {
                 onClick={() => handleFilterChange("fail")}
                 className={`
                   px-4 py-2 rounded-lg font-medium text-sm transition-all
-                  ${
-                    filter === "fail"
-                      ? "bg-red-500 text-white shadow-md"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  ${filter === "fail"
+                    ? "bg-red-500 text-white shadow-md"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }
                 `}
               >
@@ -667,8 +663,8 @@ export default function CPRFeedbackPage() {
                         {record.manikinType === "adult"
                           ? "성인"
                           : record.manikinType === "infant"
-                          ? "유아"
-                          : "소아"}
+                            ? "유아"
+                            : "소아"}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900">
                         {record.trainingType}
@@ -678,13 +674,12 @@ export default function CPRFeedbackPage() {
                       </td>
                       <td className="px-4 py-3 text-sm">
                         <span
-                          className={`font-bold ${
-                            record.score >= 80
+                          className={`font-bold ${record.score >= 80
                               ? "text-green-600"
                               : record.score >= 60
-                              ? "text-yellow-600"
-                              : "text-red-600"
-                          }`}
+                                ? "text-yellow-600"
+                                : "text-red-600"
+                            }`}
                         >
                           {record.score}점
                         </span>
