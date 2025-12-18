@@ -471,7 +471,19 @@ export default function CPRFeedbackPage() {
                           </button>
                         </div>
 
-                        {feedback ? (
+                        {isLoadingFeedback ? (
+                          <div className="flex items-center justify-center h-64 bg-white rounded-lg border border-gray-200">
+                            <div className="text-center">
+                              <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-blue-500 mb-4"></div>
+                              <p className="text-gray-700 font-medium">
+                                AI가 훈련 데이터를 분석하고 있습니다...
+                              </p>
+                              <p className="text-sm text-gray-500 mt-2">
+                                잠시만 기다려주세요
+                              </p>
+                            </div>
+                          </div>
+                        ) : feedback ? (
                           <div className="bg-white rounded-lg p-6 border border-gray-200">
                             <div className="prose prose-sm max-w-none">
                               <ReactMarkdown
