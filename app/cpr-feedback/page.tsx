@@ -12,14 +12,13 @@ import {
 
 type FilterType = "all" | "pass" | "fail";
 
+// re
+
 export default function CPRFeedbackPage() {
   const [trainingRecords, setTrainingRecords] = useState<TrainingRecord[]>([]);
   const [selectedRecord, setSelectedRecord] = useState<TrainingRecord | null>(
     null
   );
-
-
-
 
 
   const [detailData, setDetailData] = useState<TrainingDetailResponse | null>(
