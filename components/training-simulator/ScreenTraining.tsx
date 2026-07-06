@@ -76,6 +76,7 @@ export default function ScreenTraining({
   onLoadingComplete,
   onBackToIntro,
 }: ScreenTrainingProps) {
+  const showDebugUI = process.env.NEXT_PUBLIC_ENV === "development";
   const [showDebugModal, setShowDebugModal] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [manikinSize, setManikinSize] = useState<"large" | "medium" | "small">("medium");
@@ -131,23 +132,26 @@ export default function ScreenTraining({
         />
       </div>
 
-      {/* 디버그 모달 토글 버튼 */}
-      <button
-        onClick={() => setShowDebugModal(!showDebugModal)}
-        className="fixed bottom-4 right-4 z-[1999] bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium flex items-center gap-2"
-        title="디버그 모달 열기"
-      >
-        <span>🐛</span>
-        Debug
-      </button>
+      {/* 디버그 모달 토글 버튼 및 모달 - 개발 환경(NEXT_PUBLIC_ENV=development)에서만 노출 */}
+      {showDebugUI && (
+        <>
+          <button
+            onClick={() => setShowDebugModal(!showDebugModal)}
+            className="fixed bottom-4 right-4 z-[1999] bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium flex items-center gap-2"
+            title="디버그 모달 열기"
+          >
+            <span>🐛</span>
+            Debug
+          </button>
 
-      {/* 디버그 모달 */}
-      <DebugModal
-        showModal={showDebugModal}
-        onClose={() => setShowDebugModal(false)}
-        compressionResults={compressionResults}
-        ventilationResults={ventilationResults}
-      />
+          <DebugModal
+            showModal={showDebugModal}
+            onClose={() => setShowDebugModal(false)}
+            compressionResults={compressionResults}
+            ventilationResults={ventilationResults}
+          />
+        </>
+      )}
 
       {/* 메인 컨텐츠 영역 - 나머지 높이 */}
       <div className="flex h-[calc(100vh-60px)]">
