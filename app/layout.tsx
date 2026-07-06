@@ -13,9 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Innosonian",
-  description:
-    "Innosonian provide effective CPR training solutions to help anyone save a life.",
+  title: "VivusCardio Experiment",
+  description: "VivusCardio Connect - CPR training experiment",
 };
 
 export default function RootLayout({
