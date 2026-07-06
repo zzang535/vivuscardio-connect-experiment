@@ -48,7 +48,7 @@ export default function ScreenResult({
   return (
     <div className="w-full h-full bg-gray-50">
       {/* 헤더 영역 - 60px */}
-      <div style={{ height: '60px' }}>
+      <div style={{ height: "60px" }}>
         <Header
           mode="result"
           onRestart={onRestart}
@@ -59,9 +59,7 @@ export default function ScreenResult({
       {/* 메인 컨텐츠 영역 */}
       <div className="flex h-[calc(100vh-60px)]">
         {/* 좌측 결과 영역 - 고정 1500px */}
-        <motion.div
-          className="w-[1366px] py-8 flex-shrink-0"
-        >
+        <motion.div className="w-[1366px] py-8 flex-shrink-0">
           <div className="w-full max-w-[1286px] mx-auto h-full flex flex-col justify-center">
             {/* Header */}
             <motion.div
@@ -92,9 +90,21 @@ export default function ScreenResult({
                 <MetricCard
                   title="Compression Depth"
                   criteria={[
-                    { label: "Too Deep", value: compressionDepth.tooDeep, color: "#D9D9D9" },
-                    { label: "Good", value: compressionDepth.good, color: "#0061F2" },
-                    { label: "Too Shallow", value: compressionDepth.tooShallow, color: "#D9D9D9" },
+                    {
+                      label: "Too Deep",
+                      value: compressionDepth.tooDeep,
+                      color: "#D9D9D9",
+                    },
+                    {
+                      label: "Good",
+                      value: compressionDepth.good,
+                      color: "#0061F2",
+                    },
+                    {
+                      label: "Too Shallow",
+                      value: compressionDepth.tooShallow,
+                      color: "#D9D9D9",
+                    },
                   ]}
                 />
 
@@ -102,9 +112,21 @@ export default function ScreenResult({
                 <MetricCard
                   title="Compression Rate"
                   criteria={[
-                    { label: "Too Slow", value: compressionRate.tooSlow, color: "#D9D9D9" },
-                    { label: "Good", value: compressionRate.good, color: "#0061F2" },
-                    { label: "Too Fast", value: compressionRate.tooFast, color: "#D9D9D9" },
+                    {
+                      label: "Too Slow",
+                      value: compressionRate.tooSlow,
+                      color: "#D9D9D9",
+                    },
+                    {
+                      label: "Good",
+                      value: compressionRate.good,
+                      color: "#0061F2",
+                    },
+                    {
+                      label: "Too Fast",
+                      value: compressionRate.tooFast,
+                      color: "#D9D9D9",
+                    },
                   ]}
                 />
 
@@ -112,9 +134,21 @@ export default function ScreenResult({
                 <MetricCard
                   title="Hand Position"
                   criteria={[
-                    { label: "Incorrect (Abdomen)", value: handPosition.incorrectAbdomen, color: "#D9D9D9" },
-                    { label: "Good", value: handPosition.good, color: "#0061F2" },
-                    { label: "Incorrect (LR)", value: handPosition.incorrectLR, color: "#D9D9D9" },
+                    {
+                      label: "Incorrect (Abdomen)",
+                      value: handPosition.incorrectAbdomen,
+                      color: "#D9D9D9",
+                    },
+                    {
+                      label: "Good",
+                      value: handPosition.good,
+                      color: "#0061F2",
+                    },
+                    {
+                      label: "Incorrect (LR)",
+                      value: handPosition.incorrectLR,
+                      color: "#D9D9D9",
+                    },
                   ]}
                 />
               </div>
@@ -125,9 +159,21 @@ export default function ScreenResult({
                 <MetricCard
                   title="Compression Count"
                   criteria={[
-                    { label: "Too Few", value: compressionCount.tooFew, color: "#D9D9D9" },
-                    { label: "Good", value: compressionCount.good, color: "#0061F2" },
-                    { label: "Too Many", value: compressionCount.tooMany, color: "#D9D9D9" },
+                    {
+                      label: "Too Few",
+                      value: compressionCount.tooFew,
+                      color: "#D9D9D9",
+                    },
+                    {
+                      label: "Good",
+                      value: compressionCount.good,
+                      color: "#0061F2",
+                    },
+                    {
+                      label: "Too Many",
+                      value: compressionCount.tooMany,
+                      color: "#D9D9D9",
+                    },
                   ]}
                 />
 
@@ -135,9 +181,21 @@ export default function ScreenResult({
                 <MetricCard
                   title="Ventilation Volume"
                   criteria={[
-                    { label: "Too Little", value: ventilationVolume.tooLittle, color: "#D9D9D9" },
-                    { label: "Good", value: ventilationVolume.good, color: "#0061F2" },
-                    { label: "Too Much", value: ventilationVolume.tooMuch, color: "#D9D9D9" },
+                    {
+                      label: "Too Little",
+                      value: ventilationVolume.tooLittle,
+                      color: "#D9D9D9",
+                    },
+                    {
+                      label: "Good",
+                      value: ventilationVolume.good,
+                      color: "#0061F2",
+                    },
+                    {
+                      label: "Too Much",
+                      value: ventilationVolume.tooMuch,
+                      color: "#D9D9D9",
+                    },
                   ]}
                 />
 
@@ -145,9 +203,21 @@ export default function ScreenResult({
                 <MetricCard
                   title="Ventilation Count"
                   criteria={[
-                    { label: "Too Few", value: ventilationCount.tooFew, color: "#D9D9D9" },
-                    { label: "Good", value: ventilationCount.good, color: "#0061F2" },
-                    { label: "Too Many", value: ventilationCount.tooMany, color: "#D9D9D9" },
+                    {
+                      label: "Too Few",
+                      value: ventilationCount.tooFew,
+                      color: "#D9D9D9",
+                    },
+                    {
+                      label: "Good",
+                      value: ventilationCount.good,
+                      color: "#0061F2",
+                    },
+                    {
+                      label: "Too Many",
+                      value: ventilationCount.tooMany,
+                      color: "#D9D9D9",
+                    },
                   ]}
                 />
               </div>
@@ -167,7 +237,9 @@ export default function ScreenResult({
                 Try Again
               </button>
               <button
-                onClick={() => window.open('https://innosonian.global/', '_blank')}
+                onClick={() =>
+                  window.open("https://www.innosonian.co.kr/", "_blank")
+                }
                 className="flex-1 py-8 bg-[#0061F2] text-white text-[24px] font-bold rounded-[30px] hover:bg-[#0052D4] transition-colors shadow-lg"
               >
                 Learn More About VivusCardio Connect
