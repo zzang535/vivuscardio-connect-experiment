@@ -4,11 +4,11 @@ export default function AclsTrainingIndexPage() {
   return (
     <main className="min-h-screen bg-[#07111f] px-6 py-16 text-white">
       <div className="mx-auto max-w-5xl">
-        <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-300">Vivus Cardio Simulation</p>
-        <h1 className="mt-4 text-4xl font-semibold tracking-tight">ACLS Training Experiments</h1>
-        <p className="mt-3 max-w-2xl text-slate-400">기존 대시보드형 프로토타입과 단일 VF 상황에 집중한 시나리오형 프로토타입을 분리했습니다.</p>
+        <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-300">Vivus Cardio experiment</p>
+        <h1 className="mt-4 text-4xl font-semibold tracking-tight">ACLS Simulation Scenarios</h1>
+        <p className="mt-3 max-w-2xl text-slate-400">실제 심정지 현장을 재현한 인터랙티브 ACLS 훈련 시뮬레이션입니다. 아래에서 상황을 선택해 시작하세요.</p>
 
-        <div className="mt-10 grid gap-5 md:grid-cols-2">
+        <div className="mt-10 grid gap-5 md:max-w-xl">
           <VersionCard
             href="/acls-training/vf-01"
             eyebrow="Current · Scenario VF-01"
@@ -16,17 +16,16 @@ export default function AclsTrainingIndexPage() {
             description="알람 발생부터 환자 확인, 코드 호출, 첫 제세동 직후 CPR 재개까지 시간·음향·팀 연출로 진행합니다."
             accent
           />
+          {/* Archive · Prototype V1 (ACLS 처치 대시보드) — 버튼 숨김. route(/acls-training/prototype-v1)는 유지.
           <VersionCard
             href="/acls-training/prototype-v1"
             eyebrow="Archive · Prototype V1"
             title="ACLS 처치 대시보드"
             description="전체 처치 버튼과 병실 상태를 한 화면에 표현했던 이전 프로토타입입니다. 비교 목적으로 보존합니다."
           />
+          */}
         </div>
 
-        <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-sm text-slate-400">
-          기획 기준 문서: <code className="text-slate-200">app/acls-training/SCENARIO_VF_01.md</code>
-        </div>
       </div>
     </main>
   );

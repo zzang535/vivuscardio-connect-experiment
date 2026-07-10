@@ -16,6 +16,8 @@ from melo.api import TTS
 OUTPUT_DIR = Path(__file__).resolve().parents[1] / "public" / "acls-training" / "audio" / "vf-01"
 
 LINES = {
+    # 시작 화면 음향 테스트용 나레이션.
+    "audio-test": "음향 테스트입니다. 이 음성이 들리면 준비 완료입니다.",
     "scenario-timeout": "시나리오 제한 시간이 종료되었습니다. 수행 결과를 확인합니다.",
     # Spell out the bed number so Korean G2P reads it as "삼 번", not "세 번".
     "alarm-reminder": "삼 번 병상 알람입니다. 즉시 환자를 확인해 주세요.",
@@ -36,7 +38,7 @@ LINES = {
     "vf-shockable": "브이에프입니다. 쇼커블 리듬입니다.",
     "charging": "이백 줄 충전합니다. 압박 계속하세요.",
     "charge-complete": "이백 줄 충전 완료.",
-    "all-clear": "모두 물러나세요. 산소 떨어졌습니다. 모두 물러났습니다.",
+    "all-clear": "모두 물러나세요. 산소 분리했습니다. 모두 물러났습니다.",
 }
 
 

@@ -1,0 +1,25 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - img "야간 일반 병동" [ref=e3]
+    - generic [ref=e6]:
+      - link "← 실험 목록" [ref=e7] [cursor=pointer]:
+        - /url: /acls-training
+      - paragraph [ref=e8]: Scenario VF-01 · 60–90 sec
+      - heading "야간 일반 병동 VF 심정지" [level=1] [ref=e9]: 야간 일반 병동VF 심정지
+      - paragraph [ref=e10]: 당신은 야간 근무 중인 병동 간호사입니다. 모니터 알람부터 환자를 확인하고, 코드팀을 이끌어 첫 제세동 후 CPR을 재개하세요.
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - paragraph [ref=e13]: 역할
+          - paragraph [ref=e14]: 최초 반응자
+        - generic [ref=e15]:
+          - paragraph [ref=e16]: 종료
+          - paragraph [ref=e17]: 첫 shock 후 CPR
+        - generic [ref=e18]:
+          - paragraph [ref=e19]: 제한시간
+          - paragraph [ref=e20]: 90초
+      - generic [ref=e21]:
+        - button "소리와 함께 시작" [ref=e22]
+        - button "음향 테스트" [ref=e23]
+      - paragraph [ref=e24]: ‘음향 테스트’로 스피커와 볼륨을 먼저 확인하세요. 모든 음성은 자막으로도 표시됩니다.
+  - button "Open Next.js Dev Tools" [ref=e30] [cursor=pointer]
+  - alert [ref=e34]

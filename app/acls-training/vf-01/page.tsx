@@ -46,7 +46,7 @@ const INITIAL: RunState = {
 };
 
 const VOICE_BASE = "/acls-training/audio/vf-01";
-const VOICE_VERSION = "2";
+const VOICE_VERSION = "3";
 // 실제 현장에서 들리는 목소리(diegetic)만 음성으로 재생한다.
 // 코치성 리마인더는 음성 없이 텍스트 토스트(remind)로만 표시 → VOICE_CUES에 넣지 않는다.
 const VOICE_CUES = [
@@ -57,6 +57,12 @@ const VOICE_CUES = [
 ] as const;
 type VoiceCue = (typeof VOICE_CUES)[number];
 
+// urgent: 음성 재생 중에도 잠기지 않는 시간 민감 동작(제세동 시퀀스 등).
+type ActionButton = { label: string; detail: string; onClick: () => void; primary: boolean; urgent?: boolean };
+
+// 시나리오 종료 시 디브리핑 전에 현재 화면 위로 띄우는 결과 모달.
+type Ending = { status: "success" | "fail"; title: string; message: string };
+
 export default function VfScenarioPage() {
   const [scene, setScene] = useState<Scene>("ready");
   const [run, setRun] = useState<RunState>(INITIAL);
@@ -65,6 +71,7 @@ export default function VfScenarioPage() {
   const [speaking, setSpeaking] = useState(false);
   const [showLog, setShowLog] = useState(false);
   const [reminder, setReminder] = useState<string | null>(null);
+  const [ending, setEnding] = useState<Ending | null>(null);
   const [timeline, setTimeline] = useState<TimelineItem[]>([]);
   const [muted, setMuted] = useState(false);
   const [flash, setFlash] = useState(false);
@@ -201,10 +208,10 @@ export default function VfScenarioPage() {
   }, [stopMetronome, tone]);
 
   useEffect(() => {
-    if (scene === "ready" || scene === "debrief") return;
+    if (scene === "ready" || scene === "debrief" || ending) return;
     const timer = window.setInterval(() => setSeconds(elapsed()), 250);
     return () => window.clearInterval(timer);
-  }, [elapsed, scene]);
+  }, [elapsed, scene, ending]);
 
   useEffect(() => () => {
     stopAlarm();
@@ -223,13 +230,13 @@ export default function VfScenarioPage() {
   }, [scene]);
 
   useEffect(() => {
-    if (scene === "ready" || scene === "debrief") return;
+    if (scene === "ready" || scene === "debrief" || ending) return;
     if (seconds >= 90) {
       stopAlarm();
       stopMetronome();
       log("시나리오 제한시간 90초 도달", "warn");
-      setScene("debrief");
       speak("scenario-timeout", "시나리오 제한 시간이 종료되었습니다. 수행 결과를 확인합니다.");
+      setEnding({ status: "fail", title: "제한 시간이 종료되었습니다", message: "90초 안에 첫 제세동 후 CPR 재개까지 완료하지 못했습니다." });
       return;
     }
 
@@ -268,10 +275,10 @@ export default function VfScenarioPage() {
         setRun((current) => ({ ...current, cprActive: true, finished: true }));
         startMetronome();
         log("NPC가 CPR 재개 · 중대한 지연", "warn");
-        setScene("debrief");
+        setEnding({ status: "fail", title: "CPR 재개가 지연되었습니다", message: "쇼크 후 흉부압박 재개가 늦어 팀원이 대신 시작했습니다. 쇼크 직후 즉시 압박 재개가 핵심입니다." });
       }
     }
-  }, [log, promptLevel, remind, run.cprActive, run.shocked, scene, sceneStartedAt, seconds, shockAt, speak, startAlarm, startMetronome, stopAlarm, stopMetronome]);
+  }, [ending, log, promptLevel, remind, run.cprActive, run.shocked, scene, sceneStartedAt, seconds, shockAt, speak, startAlarm, startMetronome, stopAlarm, stopMetronome]);
 
   useEffect(() => {
     if (!run.codeCalled || run.teamArrived) return;
@@ -285,6 +292,13 @@ export default function VfScenarioPage() {
     }, 7000);
     return () => window.clearTimeout(timer);
   }, [elapsed, log, run.codeCalled, run.teamArrived, speak, tone]);
+
+  // 스피커·볼륨 확인용 음성 나레이션 테스트 (음소거 여부와 무관하게 항상 재생).
+  const playTest = useCallback((onEnd?: () => void) => {
+    const audio = new Audio(`${VOICE_BASE}/audio-test.wav?v=${VOICE_VERSION}`);
+    audio.onended = () => onEnd?.();
+    void audio.play().catch(() => onEnd?.());
+  }, []);
 
   const begin = () => {
     ensureAudio();
@@ -352,7 +366,7 @@ export default function VfScenarioPage() {
       setRun((current) => ({ ...current, cprActive: true, finished: true }));
       window.setTimeout(() => {
         stopMetronome();
-        setScene("debrief");
+        setEnding({ status: "success", title: "성공적으로 완료했습니다", message: "첫 제세동 직후 즉시 CPR을 재개했습니다. 핵심 소생 시퀀스를 모두 수행했습니다." });
       }, 1800);
     }
   };
@@ -422,7 +436,7 @@ export default function VfScenarioPage() {
     stopMetronome();
     setRun((current) => ({ ...current, cprActive: false, cleared: true }));
     log("모두 물러남 및 산소 분리 확인", "good");
-    speak("all-clear", "모두 물러나세요. 산소 떨어졌습니다. 모두 물러났습니다.");
+    speak("all-clear", "모두 물러나세요. 산소 분리했습니다. 모두 물러났습니다.");
   };
 
   const shock = () => {
@@ -452,9 +466,15 @@ export default function VfScenarioPage() {
     setPromptLevel(0);
     setSceneStartedAt(0);
     setShockAt(null);
+    setEnding(null);
   };
 
-  const actions = (() => {
+  const finishToDebrief = () => {
+    setEnding(null);
+    setScene("debrief");
+  };
+
+  const actions = ((): ActionButton[] => {
     if (scene === "ward" || scene === "alarm") return [];
     if (scene === "check") return [
       ...(!run.responseChecked ? [{ label: "반응 확인", detail: "어깨를 두드리고 부름", onClick: checkResponse, primary: true }] : []),
@@ -479,7 +499,7 @@ export default function VfScenarioPage() {
     return [];
   })();
 
-  if (scene === "ready") return <ReadyScreen onStart={begin} muted={muted} onMute={() => setMuted((value) => !value)} />;
+  if (scene === "ready") return <ReadyScreen onStart={begin} onTest={playTest} />;
   if (scene === "debrief") return <Debrief timeline={timeline} seconds={seconds} onRestart={reset} />;
 
   return (
@@ -501,11 +521,14 @@ export default function VfScenarioPage() {
             </>
           ) : (
             <>
-              <Image src="/acls-training/hospital-room-patient-night-v1.png" alt="무반응 환자가 누워 있는 야간 병실" fill priority sizes="calc(100vw - 320px)" className="object-cover transition duration-700" />
+              <Image src="/acls-training/hospital-room-patient-night-v1.png" alt="무반응 환자가 누워 있는 야간 병실" fill priority sizes="100vw" className="object-cover transition duration-700" />
               <div className="absolute inset-0 bg-gradient-to-t from-[#06101d]/95 via-transparent to-[#06101d]/40" />
-              {run.padsAttached && <><span className="absolute left-[45.5%] top-[39%] h-5 w-7 rotate-12 rounded bg-white/95 shadow-lg ring-2 ring-cyan-500" /><span className="absolute left-[49%] top-[43%] h-5 w-7 -rotate-12 rounded bg-white/95 shadow-lg ring-2 ring-cyan-500" /></>}
-              {run.cprActive && <div className="absolute left-[45%] top-[39%] h-20 w-20 animate-ping rounded-full border-4 border-cyan-300/70" />}
-              {run.teamArrived && <><Person className="left-[25%] top-[34%]" color="#0f766e" active={run.cprActive} label="CPR" /><Person className="left-[60%] top-[34%]" color="#1d4ed8" active={run.padsAttached} label="AED" /><Person className="left-[72%] top-[44%]" color="#7c3aed" active={run.oxygenReady} label="AIR" /></>}
+              {/* 이미지와 동일한 16:9 좌표계 박스. object-cover(높이 기준 커버)와 정렬되어 오버레이 %가 이미지 픽셀 위치에 대응한다. */}
+              <div className="pointer-events-none absolute left-1/2 top-0 aspect-[16/9] h-full -translate-x-1/2">
+                {run.teamArrived && <><Person className="left-[30.7%] top-[41%]" color="#0f766e" active={run.cprActive} label="CPR" /><Person className="left-[49%] top-[30%]" color="#1d4ed8" active={run.padsAttached} label="AED" /><Person className="left-[19.7%] top-[46%]" color="#7c3aed" active={run.oxygenReady} label="AIR" /></>}
+                {run.padsAttached && <><span className="absolute left-[43.1%] top-[40.5%] h-5 w-7 -translate-x-1/2 -translate-y-1/2 rotate-12 rounded bg-white/95 shadow-lg ring-2 ring-cyan-500" /><span className="absolute left-[45.5%] top-[42.5%] h-5 w-7 -translate-x-1/2 -translate-y-1/2 -rotate-12 rounded bg-white/95 shadow-lg ring-2 ring-cyan-500" /></>}
+                {run.cprActive && <div className="absolute left-[44.9%] top-[41%] h-20 w-20 -translate-x-1/2 -translate-y-1/2 animate-ping rounded-full border-4 border-cyan-300/70" />}
+              </div>
               <VitalsMonitor cpr={run.cprActive} shifted={showLog} />
             </>
           )}
@@ -556,7 +579,7 @@ export default function VfScenarioPage() {
           ) : actions.length > 0 ? (
             <div className="w-[300px] shrink-0 rounded-[22px] border-[3px] border-white/20 bg-[#0a1626]/94 p-3 shadow-[0_14px_44px_rgba(0,0,0,0.6)] backdrop-blur-xl">
               <p className="px-2 pb-2 pt-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">지시할 행동</p>
-              <div className="grid gap-2">{actions.map((action) => <button key={action.label} disabled={speaking} onClick={action.onClick} className={`flex w-full items-center justify-between gap-2 rounded-xl border-2 px-4 py-3 text-left transition ${speaking ? "cursor-not-allowed opacity-40" : "hover:-translate-y-0.5"} ${action.primary ? "border-cyan-300/60 bg-cyan-300/20 hover:bg-cyan-300/30" : "border-white/[0.12] bg-white/5 hover:bg-white/10"}`}><span><span className="block text-base font-bold">{action.label}</span><span className="mt-0.5 block text-[11px] text-slate-400">{action.detail}</span></span><span className={`text-lg ${action.primary ? "text-cyan-300" : "text-slate-500"}`}>▶</span></button>)}</div>
+              <div className="grid gap-2">{actions.map((action) => { const locked = speaking && !action.urgent; return <button key={action.label} disabled={locked} onClick={action.onClick} className={`flex w-full items-center justify-between gap-2 rounded-xl border-2 px-4 py-3 text-left transition ${locked ? "cursor-not-allowed opacity-40" : "hover:-translate-y-0.5"} ${action.primary ? "border-cyan-300/60 bg-cyan-300/20 hover:bg-cyan-300/30" : "border-white/[0.12] bg-white/5 hover:bg-white/10"}`}><span><span className="block text-base font-bold">{action.label}</span><span className="mt-0.5 block text-[11px] text-slate-400">{action.detail}</span></span><span className={`text-lg ${action.primary ? "text-cyan-300" : "text-slate-500"}`}>▶</span></button>; })}</div>
               {speaking && <p className="flex items-center gap-1.5 px-2 pb-1 pt-2 text-[11px] font-semibold text-cyan-300"><span className="animate-pulse">🔊</span> 음성 재생 중 · 잠시만</p>}
             </div>
           ) : null}
@@ -566,13 +589,28 @@ export default function VfScenarioPage() {
       {/* ===== Progress board (진행 상황판) · non-blocking drawer ===== */}
       {showLog && <ProgressLog scene={scene} timeline={timeline} onClose={() => setShowLog(false)} />}
 
-      <style jsx global>{`.vf-grid{background-image:linear-gradient(rgba(45,212,191,.16) 1px,transparent 1px),linear-gradient(90deg,rgba(45,212,191,.16) 1px,transparent 1px);background-size:10px 10px}@keyframes reminderIn{from{opacity:0;transform:translate(-50%,-10px)}to{opacity:1;transform:translate(-50%,0)}}.reminder-toast{animation:reminderIn .25s ease-out both}`}</style>
+      {/* ===== 결과 모달 · 현재 화면 위에 띄우고, 확인하면 디브리핑으로 ===== */}
+      {ending && (
+        <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="ending-pop w-[min(460px,92%)] rounded-3xl border-2 border-white/15 bg-[#0a1626]/97 p-8 text-center shadow-[0_24px_70px_rgba(0,0,0,0.65)]">
+            <div className={`mx-auto grid h-16 w-16 place-items-center rounded-full border-2 text-3xl font-black ${ending.status === "success" ? "border-emerald-400/50 bg-emerald-400/15 text-emerald-300" : "border-amber-400/50 bg-amber-400/15 text-amber-300"}`}>{ending.status === "success" ? "✓" : "!"}</div>
+            <p className={`mt-5 text-xs font-black uppercase tracking-[0.24em] ${ending.status === "success" ? "text-emerald-300" : "text-amber-300"}`}>{ending.status === "success" ? "성공" : "실패"}</p>
+            <h2 className="mt-2 text-2xl font-bold">{ending.title}</h2>
+            <p className="mt-3 text-sm leading-6 text-slate-300">{ending.message}</p>
+            <button onClick={finishToDebrief} className="mt-7 w-full rounded-xl bg-cyan-300 px-5 py-4 font-bold text-[#07111f] transition hover:bg-cyan-200">수행 디브리핑 보기 →</button>
+          </div>
+        </div>
+      )}
+
+      <style jsx global>{`.vf-grid{background-image:linear-gradient(rgba(45,212,191,.16) 1px,transparent 1px),linear-gradient(90deg,rgba(45,212,191,.16) 1px,transparent 1px);background-size:10px 10px}@keyframes reminderIn{from{opacity:0;transform:translate(-50%,-10px)}to{opacity:1;transform:translate(-50%,0)}}.reminder-toast{animation:reminderIn .25s ease-out both}@keyframes endingPop{from{opacity:0;transform:scale(.92) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}.ending-pop{animation:endingPop .28s cubic-bezier(.2,.8,.2,1) both}`}</style>
     </main>
   );
 }
 
-function ReadyScreen({ onStart, muted, onMute }: { onStart: () => void; muted: boolean; onMute: () => void }) {
-  return <main className="relative min-h-screen overflow-hidden bg-[#07111f] text-white"><Image src="/acls-training/ward-overview-night-v1.png" alt="야간 일반 병동" fill priority className="object-cover opacity-25 blur-[1px]" /><div className="absolute inset-0 bg-gradient-to-r from-[#07111f] via-[#07111f]/95 to-[#07111f]/55" /><div className="relative mx-auto flex min-h-screen max-w-6xl items-center px-8"><div className="max-w-2xl"><Link href="/acls-training" className="text-sm text-slate-400 hover:text-white">← 실험 목록</Link><p className="mt-12 text-xs font-bold uppercase tracking-[0.25em] text-cyan-300">Scenario VF-01 · 60–90 sec</p><h1 className="mt-5 text-5xl font-semibold leading-tight">야간 일반 병동<br />VF 심정지</h1><p className="mt-6 max-w-xl text-lg leading-8 text-slate-300">당신은 야간 근무 중인 병동 간호사입니다. 모니터 알람부터 환자를 확인하고, 코드팀을 이끌어 첫 제세동 후 CPR을 재개하세요.</p><div className="mt-8 grid grid-cols-3 gap-3 text-xs"><Brief label="역할" value="최초 반응자" /><Brief label="종료" value="첫 shock 후 CPR" /><Brief label="제한시간" value="90초" /></div><div className="mt-10 flex gap-3"><button onClick={onStart} className="rounded-xl bg-cyan-300 px-7 py-4 font-bold text-[#07111f] transition hover:bg-cyan-200">소리와 함께 시작</button><button onClick={onMute} className="rounded-xl border border-white/15 px-5 py-4 text-sm text-slate-300 hover:bg-white/5">{muted ? "음소거됨" : "음향 테스트 준비"}</button></div><p className="mt-4 text-xs text-slate-500">브라우저 정책상 시작 버튼을 누른 뒤 음향이 재생됩니다. 모든 음성은 자막으로도 표시됩니다.</p></div></div></main>;
+function ReadyScreen({ onStart, onTest }: { onStart: () => void; onTest: (onEnd?: () => void) => void }) {
+  const [playing, setPlaying] = useState(false);
+  const test = () => { if (playing) return; setPlaying(true); onTest(() => setPlaying(false)); };
+  return <main className="relative min-h-screen overflow-hidden bg-[#07111f] text-white"><Image src="/acls-training/ward-overview-night-v1.png" alt="야간 일반 병동" fill priority className="object-cover opacity-25 blur-[1px]" /><div className="absolute inset-0 bg-gradient-to-r from-[#07111f] via-[#07111f]/95 to-[#07111f]/55" /><div className="relative mx-auto flex min-h-screen max-w-6xl items-center px-8"><div className="max-w-2xl"><Link href="/acls-training" className="text-sm text-slate-400 hover:text-white">← 실험 목록</Link><p className="mt-12 text-xs font-bold uppercase tracking-[0.25em] text-cyan-300">Scenario VF-01 · 60–90 sec</p><h1 className="mt-5 text-5xl font-semibold leading-tight">야간 일반 병동<br />VF 심정지</h1><p className="mt-6 max-w-xl text-lg leading-8 text-slate-300">당신은 야간 근무 중인 병동 간호사입니다. 모니터 알람부터 환자를 확인하고, 코드팀을 이끌어 첫 제세동 후 CPR을 재개하세요.</p><div className="mt-8 grid grid-cols-3 gap-3 text-xs"><Brief label="역할" value="최초 반응자" /><Brief label="종료" value="첫 shock 후 CPR" /><Brief label="제한시간" value="90초" /></div><div className="mt-10 flex gap-3"><button onClick={onStart} className="rounded-xl bg-cyan-300 px-7 py-4 font-bold text-[#07111f] transition hover:bg-cyan-200">소리와 함께 시작</button><button onClick={test} disabled={playing} className={`rounded-xl border px-5 py-4 text-sm transition ${playing ? "border-cyan-300/50 bg-cyan-300/10 text-cyan-200" : "border-white/15 text-slate-300 hover:bg-white/5"}`}>{playing ? <span className="flex items-center gap-1.5"><span className="animate-pulse">🔊</span> 재생 중…</span> : "음향 테스트"}</button></div><p className="mt-4 text-xs text-slate-500">‘음향 테스트’로 스피커와 볼륨을 먼저 확인하세요. 모든 음성은 자막으로도 표시됩니다.</p></div></div></main>;
 }
 
 function Debrief({ timeline, seconds, onRestart }: { timeline: TimelineItem[]; seconds: number; onRestart: () => void }) {
