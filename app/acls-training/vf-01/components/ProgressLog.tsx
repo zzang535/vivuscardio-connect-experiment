@@ -3,21 +3,41 @@
 import { PROGRESS_STEPS, SCENE_LABEL, mmss } from "../scenario";
 import type { Scene, TimelineItem } from "../scenario";
 
-// 진행 상황판 — 우측에서 열리는 비차단(non-blocking) 드로어.
-// 시나리오 진행 단계 스텝퍼 + 현장 보고(타임라인 로그)를 보여준다.
 export function ProgressLog({ scene, timeline, onClose }: { scene: Scene; timeline: TimelineItem[]; onClose: () => void }) {
   const currentIndex = PROGRESS_STEPS.indexOf(scene);
+
   return (
-    <aside className="absolute right-0 top-0 z-50 flex h-full w-[340px] flex-col overflow-y-auto border-l border-white/10 bg-[#091525] p-5 shadow-[-10px_0_36px_rgba(0,0,0,0.55)]">
-      <div className="flex items-center justify-between">
-        <div><h2 className="text-sm font-bold">진행 상황판</h2><p className="text-[9px] uppercase tracking-[0.18em] text-slate-500">Progress &amp; field log</p></div>
-        <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg border border-white/10 text-slate-400 hover:bg-white/5" aria-label="상황판 닫기">✕</button>
+    <aside className="absolute right-0 top-0 z-50 flex h-full w-[340px] flex-col overflow-y-auto border-l border-[#2d3945] bg-[#111a22] p-5 shadow-[-8px_0_24px_rgba(0,0,0,0.35)]">
+      <div className="flex items-center justify-between border-b border-[#2d3945] pb-4">
+        <div>
+          <h2 className="text-base font-bold">훈련 기록</h2>
+          <p className="mt-0.5 text-xs text-slate-400">현재 단계와 수행 내역</p>
+        </div>
+        <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded border border-[#3a4651] text-slate-300 hover:bg-white/5" aria-label="훈련 기록 닫기">✕</button>
       </div>
-      <p className="mt-5 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">Scenario progression</p>
-      <div className="mt-3 space-y-1">{PROGRESS_STEPS.map((item, index) => <div key={item} className={`flex items-center gap-3 rounded-lg px-3 py-2 text-xs ${item === scene ? "bg-cyan-300/10 text-cyan-200" : index < currentIndex ? "text-emerald-400" : "text-slate-600"}`}><span>{index < currentIndex ? "✓" : item === scene ? "●" : "○"}</span>{SCENE_LABEL[item]}</div>)}</div>
-      <div className="my-5 h-px bg-white/10" />
-      <div className="flex items-center justify-between"><h3 className="text-sm font-semibold">현장 보고</h3><span className="text-[9px] uppercase tracking-wider text-slate-600">No score shown</span></div>
-      <div className="mt-3 space-y-2">{timeline.slice().reverse().map((item, index) => <div key={`${item.at}-${index}`} className="flex gap-3 rounded-xl border border-white/[0.06] bg-white/[0.025] p-3"><span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${item.tone === "good" ? "bg-emerald-400" : item.tone === "warn" ? "bg-amber-400" : "bg-cyan-400"}`} /><div><span className="font-mono text-[9px] text-slate-600">{mmss(item.at)}</span><p className="mt-1 text-xs leading-5 text-slate-300">{item.text}</p></div></div>)}</div>
+
+      <h3 className="mt-5 text-xs font-semibold text-slate-400">진행 단계</h3>
+      <ol className="mt-2 border-l border-[#3a4651] pl-4">
+        {PROGRESS_STEPS.map((item, index) => (
+          <li key={item} className={`relative py-2 text-xs ${item === scene ? "font-bold text-white" : index < currentIndex ? "text-emerald-400" : "text-slate-500"}`}>
+            <span className={`absolute -left-[21px] top-3 h-2.5 w-2.5 rounded-full border-2 border-[#111a22] ${item === scene ? "bg-[#4fa3bd]" : index < currentIndex ? "bg-emerald-500" : "bg-[#46515c]"}`} />
+            {SCENE_LABEL[item]}
+          </li>
+        ))}
+      </ol>
+
+      <div className="mt-6 flex items-center justify-between border-b border-[#2d3945] pb-2">
+        <h3 className="text-xs font-semibold text-slate-300">수행 내역</h3>
+        <span className="text-[10px] text-slate-500">최근 항목 순</span>
+      </div>
+      <div className="divide-y divide-[#26313b]">
+        {timeline.slice().reverse().map((item, index) => (
+          <div key={`${item.at}-${index}`} className="grid grid-cols-[42px_1fr] gap-3 py-3">
+            <span className="font-mono text-[10px] text-slate-500">{mmss(item.at)}</span>
+            <p className={`text-xs leading-5 ${item.tone === "good" ? "text-emerald-300" : item.tone === "warn" ? "text-amber-300" : "text-slate-300"}`}>{item.text}</p>
+          </div>
+        ))}
+      </div>
     </aside>
   );
 }

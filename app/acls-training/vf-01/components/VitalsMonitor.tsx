@@ -97,14 +97,14 @@ export function VitalsMonitor({ cpr, shifted }: { cpr: boolean; shifted: boolean
   }, []);
 
   return (
-    <div onClick={() => setInfo(null)} className={`absolute top-[13%] w-[440px] max-w-[46%] overflow-hidden rounded-2xl border border-slate-500/60 bg-[#050a12]/95 shadow-2xl backdrop-blur transition-[right] duration-300 ${shifted ? "right-[360px]" : "right-[4%]"}`}>
+    <div onClick={() => setInfo(null)} className={`absolute top-[13%] w-[440px] max-w-[46%] overflow-hidden rounded-md border-4 border-[#303a42] bg-[#05080b] shadow-[0_10px_24px_rgba(0,0,0,0.45)] transition-[right] duration-300 ${shifted ? "right-[360px]" : "right-[4%]"}`}>
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-2.5 text-[13px] font-bold">
-        <span className="tracking-wide text-slate-200">BED 3 · PATIENT MONITOR</span>
-        <span className="flex items-center gap-1.5 text-emerald-400"><span className="h-2 w-2 rounded-full bg-emerald-400" />CONNECTED<InfoDot id="conn" info={info} onOpen={setInfo} align="right" text="리드·센서가 환자에 정상 연결된 상태." /></span>
+        <span className="tracking-wide text-slate-200">3번 병상 · 환자 감시장치</span>
+        <span className="flex items-center gap-1.5 text-emerald-400"><span className="h-2 w-2 rounded-full bg-emerald-400" />연결됨<InfoDot id="conn" info={info} onOpen={setInfo} align="right" text="리드·센서가 환자에 정상 연결된 상태." /></span>
       </div>
-      <div className="flex animate-pulse items-center justify-between bg-red-600/90 px-4 py-1.5">
-        <span className="flex items-center gap-1.5 text-sm font-black tracking-widest text-white">⚠ VF / VT<InfoDot id="alarm" info={info} onOpen={setInfo} text="심실세동/심실빈맥 감지 알람. 즉시 제세동이 필요한 쇼커블 리듬이며, 빨강은 최고 우선순위 경보입니다." /></span>
-        <span className="text-[11px] font-bold text-red-100">CHECK PATIENT</span>
+      <div className="flex items-center justify-between bg-red-700 px-4 py-1.5">
+        <span className="flex items-center gap-1.5 text-sm font-black tracking-widest text-white">VF / VT<InfoDot id="alarm" info={info} onOpen={setInfo} text="심실세동/심실빈맥 감지 알람. 즉시 제세동이 필요한 쇼커블 리듬이며, 빨강은 최고 우선순위 경보입니다." /></span>
+        <span className="text-[11px] font-bold text-red-100">환자 확인</span>
       </div>
       <div className="relative h-[200px] bg-black">
         <div className="vf-grid absolute inset-0 opacity-40" />
@@ -132,7 +132,7 @@ function InfoDot({ id, text, info, onOpen, dir = "down", align = "left" }: { id:
   return (
     <span className="relative inline-flex align-middle">
       <button type="button" onClick={(event) => { event.stopPropagation(); onOpen(info === id ? null : id); }} className="grid h-4 w-4 place-items-center rounded-full border border-slate-400/50 text-[9px] font-bold leading-none text-slate-300 hover:bg-white/15">?</button>
-      {info === id && <span className={`absolute z-50 w-56 rounded-lg border border-white/15 bg-[#0b1524] px-3 py-2 text-[11px] font-normal normal-case leading-4 tracking-normal text-slate-100 shadow-2xl ${dir === "up" ? "bottom-6" : "top-6"} ${align === "right" ? "right-0" : "left-0"}`}>{text}</span>}
+      {info === id && <span className={`absolute z-50 w-56 rounded border border-[#46515c] bg-[#17212b] px-3 py-2 text-[11px] font-normal normal-case leading-4 tracking-normal text-slate-100 shadow-lg ${dir === "up" ? "bottom-6" : "top-6"} ${align === "right" ? "right-0" : "left-0"}`}>{text}</span>}
     </span>
   );
 }
