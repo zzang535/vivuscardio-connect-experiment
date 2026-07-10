@@ -11,6 +11,7 @@ export default function Home() {
     { id: "section3", name: "Manikin Showroom" },
     { id: "section4", name: "Manikin Showroom Virtual" },
     { id: "section5", name: "CPR Feedback" },
+    { id: "section6", name: "ACLS Training" },
   ];
 
   const handleSectionClick = (sectionId: string) => {
@@ -35,6 +36,10 @@ export default function Home() {
 
   const handleOpenCPRFeedback = () => {
     window.open("/cpr-feedback", "_blank");
+  };
+
+  const handleOpenACLSTraining = () => {
+    window.open("/acls-training", "_blank");
   };
 
   const renderActiveContent = () => {
@@ -188,6 +193,37 @@ export default function Home() {
             "
           >
             CPR Feedback 열기
+          </button>
+        </div>
+      );
+    }
+
+    if (activeSection === "section6") {
+      return (
+        <div className="p-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            ACLS Training
+          </h2>
+          <p className="text-gray-600 mb-8">
+            실제 심정지 현장을 재현한 ACLS 훈련 시뮬레이션을 시작하세요.
+          </p>
+          <button
+            onClick={handleOpenACLSTraining}
+            className="
+              px-6 py-3
+              bg-[#FF5252]
+              text-white
+              font-semibold
+              rounded-lg
+              shadow-lg
+              hover:bg-[#FF3838]
+              transition-all
+              duration-300
+              hover:shadow-xl
+              hover:scale-105
+            "
+          >
+            ACLS Training 열기
           </button>
         </div>
       );
